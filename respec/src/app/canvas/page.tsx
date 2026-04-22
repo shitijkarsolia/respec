@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -109,6 +109,8 @@ export default function CanvasPage() {
   const updateAgentLog = useRespecStore((s) => s.updateAgentLog);
   const loaded = useRef(false);
   const agentsRanRef = useRef(false);
+  const [visibleCount, setVisibleCount] = useState(0);
+  const streamingRef = useRef(false);
 
   // Auto-load demo data
   useEffect(() => {
@@ -119,9 +121,41 @@ export default function CanvasPage() {
     }
   }, [spec, setSpec]);
 
-  const nodes = useMemo(() => (spec ? buildNodes(spec) : []), [spec]);
+  const allNodes = useMemo(() => (spec ? buildNodes(spec) : []), [spec]);
   const crossLinks = useMemo(() => (spec ? computeCrossLinks(spec) : []), [spec]);
-  const edges = useMemo(() => buildEdges(crossLinks), [crossLinks]);
+  const allEdges = useMemo(() => buildEdges(crossLinks), [crossLinks]);
+
+  // Streaming animation: reveal nodes one-by-one
+  useEffect(() => {
+    if (allNodes.length === 0 || streamingRef.current) return;
+    streamingRef.current = true;
+    // Start with headers (3), then stream content nodes
+    setVisibleCount(3);
+    const contentNodes = allNodes.length - 3;
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setVisibleCount(3 + i);
+      if (i >= contentNodes) clearInterval(interval);
+    }, 120);
+    return () => clearInterval(interval);
+  }, [allNodes.length]);
+
+  // Only show nodes up to visibleCount
+  const nodes = useMemo(
+    () => allNodes.slice(0, visibleCount),
+    [allNodes, visibleCount],
+  );
+
+  // Only show edges where both source and target are visible
+  const visibleNodeIds = useMemo(
+    () => new Set(nodes.map((n) => n.id)),
+    [nodes],
+  );
+  const edges = useMemo(
+    () => allEdges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)),
+    [allEdges, visibleNodeIds],
+  );
 
   // Run agents on load
   useEffect(() => {
