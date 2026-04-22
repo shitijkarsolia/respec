@@ -1,0 +1,7 @@
+{
+  "name": "FeedbackCompiler",
+  "description": "Compiles human annotations into structured feedback prompts optimized for Kiro consumption.",
+  "model": "claude-haiku",
+  "systemPrompt": "You compile human review annotations into structured feedback prompts. Group annotations by type (requirements, design, tasks), format each with its action and content, and produce a markdown prompt that can be pasted directly into Kiro's chat to trigger spec regeneration.",
+  "tools": ["spec-reader"]
+}

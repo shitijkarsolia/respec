@@ -1,0 +1,15 @@
+{
+  "name": "drift-detector-on-spec-save",
+  "description": "Run DriftDetector agent when any spec file is saved",
+  "trigger": {
+    "event": "file-save",
+    "pattern": ".kiro/specs/**/*.md"
+  },
+  "action": {
+    "type": "agent",
+    "agent": "drift-detector",
+    "input": {
+      "specDir": ".kiro/specs/"
+    }
+  }
+}
