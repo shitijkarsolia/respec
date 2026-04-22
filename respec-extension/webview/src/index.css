@@ -1,3 +1,4 @@
+@import 'tailwindcss';
 @import '@xyflow/react/dist/style.css';
 
 *, *::before, *::after { box-sizing: border-box; }
