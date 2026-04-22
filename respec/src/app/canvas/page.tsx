@@ -22,6 +22,8 @@ import { edgeTypes } from '@/components/canvas/edges';
 import ApprovalBar from '@/components/canvas/overlays/ApprovalBar';
 import AnnotationPopover from '@/components/canvas/overlays/AnnotationPopover';
 import AgentActivityRail from '@/components/rail';
+import { sampleRequirements, sampleDesign, sampleTasks } from '@/data/sample-specs';
+import { parseSpec } from '@/lib/spec-parser';
 import type { ParsedSpec, CrossLink, AgentInsight } from '@/lib/types';
 
 const COLUMN_X = { requirements: 0, design: 450, tasks: 900 };
@@ -129,7 +131,22 @@ export default function CanvasPage() {
   const addInsight = useRespecStore((s) => s.addInsight);
   const addAgentLog = useRespecStore((s) => s.addAgentLog);
   const updateAgentLog = useRespecStore((s) => s.updateAgentLog);
+  const setSpec = useRespecStore((s) => s.setSpec);
+  const setRawMarkdown = useRespecStore((s) => s.setRawMarkdown);
   const agentsRanRef = useRef(false);
+
+  // Auto-load demo data if no spec is loaded (e.g. direct URL access)
+  useEffect(() => {
+    if (!spec) {
+      const parsed = parseSpec(sampleRequirements, sampleDesign, sampleTasks);
+      setSpec(parsed);
+      setRawMarkdown({
+        requirements: sampleRequirements,
+        design: sampleDesign,
+        tasks: sampleTasks,
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const crossLinks = useMemo(
     () => (spec ? computeCrossLinks(spec) : []),
@@ -157,13 +174,6 @@ export default function CanvasPage() {
       setEdges(buildEdges(computeCrossLinks(spec)));
     }
   }, [spec]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Redirect if no spec loaded
-  useEffect(() => {
-    if (!spec) {
-      router.replace('/');
-    }
-  }, [spec, router]);
 
   // Run agents on load
   useEffect(() => {
