@@ -27,7 +27,7 @@ function EarsCardInner({ data, id }: NodeProps & { data: Requirement }) {
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className={cn(
         'relative rounded-lg border-l-4 border-blue-500 bg-white shadow-sm dark:bg-zinc-900',
-        'min-w-[280px] max-w-[320px] p-3',
+        'min-w-[300px] max-w-[360px] p-3',
         'transition-all hover:scale-[1.02] hover:shadow-md',
       )}
     >
@@ -35,7 +35,7 @@ function EarsCardInner({ data, id }: NodeProps & { data: Requirement }) {
       <Handle type="source" position={Position.Right} className="!bg-blue-500" />
 
       {/* Header */}
-      <div className="mb-1.5 flex items-center justify-between gap-2">
+      <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-t-lg -mx-3 -mt-3 px-3 py-2 mb-2 flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           {data.id}
         </span>
@@ -62,8 +62,8 @@ function EarsCardInner({ data, id }: NodeProps & { data: Requirement }) {
       )}
 
       {/* EARS body */}
-      <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-        <span className="font-bold text-blue-600 dark:text-blue-400">
+      <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 line-clamp-3">
+        <span className="inline-flex bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded text-xs font-semibold">
           {data.type}
         </span>{' '}
         {data.trigger}{' '}

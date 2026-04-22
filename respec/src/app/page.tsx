@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +16,30 @@ export default function HomePage() {
   const [design, setDesign] = useState('');
   const [tasks, setTasks] = useState('');
   const [activeTab, setActiveTab] = useState<'upload' | 'demo'>('demo');
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('respec-theme');
+    if (stored === 'dark') {
+      document.documentElement.classList.add('dark');
+      setDark(true);
+    } else {
+      document.documentElement.classList.remove('dark');
+      setDark(false);
+    }
+  }, []);
+
+  const toggleDark = () => {
+    const next = !dark;
+    setDark(next);
+    if (next) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('respec-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('respec-theme', 'light');
+    }
+  };
 
   const handleLoadDemo = () => {
     const spec = parseSpec(sampleRequirements, sampleDesign, sampleTasks);
@@ -37,7 +61,14 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
+    <div className="relative flex flex-col items-center justify-center min-h-screen p-8 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
+      <button
+        onClick={toggleDark}
+        className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+        aria-label="Toggle dark mode"
+      >
+        {dark ? '☀️' : '🌙'}
+      </button>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

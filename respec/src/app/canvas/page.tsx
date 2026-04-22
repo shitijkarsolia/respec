@@ -21,10 +21,11 @@ import { edgeTypes } from '@/components/canvas/edges';
 import ApprovalBar from '@/components/canvas/overlays/ApprovalBar';
 import AnnotationPopover from '@/components/canvas/overlays/AnnotationPopover';
 import AgentActivityRail from '@/components/rail';
+import CanvasToolbar from '@/components/canvas/CanvasToolbar';
 import type { ParsedSpec, CrossLink, AgentInsight } from '@/lib/types';
 
-const COLUMN_X = { requirements: 0, design: 450, tasks: 900 };
-const CARD_GAP = 200;
+const COLUMN_X = { requirements: 0, design: 500, tasks: 1000 };
+const CARD_GAP = 220;
 const CARD_START_Y = 80;
 
 function buildNodes(spec: ParsedSpec): Node[] {
@@ -207,7 +208,9 @@ export default function CanvasPage() {
   }
 
   return (
-    <div className="h-screen w-screen flex">
+    <div className="h-screen w-screen flex flex-col">
+      <CanvasToolbar />
+      <div className="flex-1 flex min-h-0">
       <div className="flex-1 relative">
         <ReactFlow
           nodes={nodes}
@@ -244,6 +247,7 @@ export default function CanvasPage() {
       </div>
 
       <AgentActivityRail />
+      </div>
     </div>
   );
 }

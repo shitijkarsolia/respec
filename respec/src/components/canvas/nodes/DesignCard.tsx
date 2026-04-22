@@ -23,7 +23,7 @@ function DesignCardInner({ data }: NodeProps & { data: DesignElement }) {
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className={cn(
         'relative rounded-lg border-l-4 border-purple-500 bg-white shadow-sm dark:bg-zinc-900',
-        'min-w-[280px] max-w-[320px] p-3',
+        'min-w-[300px] max-w-[360px] p-3',
         'transition-shadow hover:shadow-md',
       )}
     >
@@ -31,7 +31,7 @@ function DesignCardInner({ data }: NodeProps & { data: DesignElement }) {
       <Handle type="source" position={Position.Right} className="!bg-purple-500" />
 
       {/* Header */}
-      <div className="mb-1.5 flex items-center justify-between gap-2">
+      <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-t-lg -mx-3 -mt-3 px-3 py-2 mb-2 flex items-center justify-between gap-2">
         <span className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-100">
           {data.title}
         </span>
@@ -42,7 +42,7 @@ function DesignCardInner({ data }: NodeProps & { data: DesignElement }) {
 
       {/* Diagram indicator */}
       {data.type === 'diagram' && (
-        <div className="mb-1.5 flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="mb-1.5 flex items-center gap-1 rounded-md border border-dashed border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 px-2 py-1.5 text-xs text-purple-600 dark:text-purple-400">
           📊 Diagram
         </div>
       )}
