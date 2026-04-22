@@ -1,0 +1,7 @@
+{
+  "name": "Respec DriftDetector",
+  "trigger_type": "File Save",
+  "target": ".kiro/specs/**/*.md",
+  "type": "agent_prompt",
+  "instruction": "Cross-check the requirements in .kiro/specs/*/requirements.md against tasks in tasks.md. For each requirement ID (FR-X.Y), verify at least one task references it in an **Implements:** line. For each task, verify it references at least one requirement. Write a JSON array of issues to .kiro/respec/insights.json with format: [{\"id\": \"<random-uuid>\", \"agentName\": \"DriftDetector\", \"severity\": \"warning\" or \"error\", \"targetId\": \"FR-X.Y\" or \"T-X\", \"message\": \"description of the issue\", \"accepted\": false}]. Severity should be \"warning\" for orphaned requirements and \"error\" for unlinked tasks. Only include actual issues found. If no issues, write an empty array []."
+}

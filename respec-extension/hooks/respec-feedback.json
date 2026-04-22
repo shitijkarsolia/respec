@@ -1,0 +1,7 @@
+{
+  "name": "Respec Feedback Applier",
+  "trigger_type": "File Save",
+  "target": ".kiro/respec/feedback.md",
+  "type": "agent_prompt",
+  "instruction": "Read the structured feedback in .kiro/respec/feedback.md. This file contains review annotations from the Respec visual spec review tool. Apply the requested changes to the corresponding spec files in .kiro/specs/. For 'Comment' actions, update the referenced requirement/design/task with the suggested improvement. For 'SPLIT' actions, break the referenced item into two separate items. For 'REMOVE' actions, delete the referenced item and update cross-references. For 'CLARIFY' actions, add more detail to the referenced item. After applying all changes, clear the contents of .kiro/respec/feedback.md to signal completion."
+}

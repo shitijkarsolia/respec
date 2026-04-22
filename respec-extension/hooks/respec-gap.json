@@ -1,0 +1,7 @@
+{
+  "name": "Respec GapFinder",
+  "trigger_type": "File Save",
+  "target": ".kiro/specs/*/requirements.md",
+  "type": "agent_prompt",
+  "instruction": "Analyze the requirements in the saved file for completeness gaps. Check for: missing error handling requirements, missing security/authentication requirements, missing empty state and loading state requirements, missing responsive/mobile requirements, missing accessibility requirements. For each gap found, append to .kiro/respec/insights.json with format: [{\"id\": \"<random-uuid>\", \"agentName\": \"GapFinder\", \"severity\": \"info\", \"message\": \"description of the gap\", \"suggestion\": \"actionable suggestion to fix it\", \"accepted\": false}]. Merge with existing insights in the file (don't overwrite DriftDetector results)."
+}
