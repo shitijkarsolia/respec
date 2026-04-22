@@ -1,7 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useRespecStore, usePendingInsights } from '@/lib/store';
+import { useRespecStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -14,10 +15,11 @@ export function AgentActivityRail() {
   const setRailOpen = useRespecStore((s) => s.setRailOpen);
   const acceptInsight = useRespecStore((s) => s.acceptInsight);
   const dismissInsight = useRespecStore((s) => s.dismissInsight);
-  const pendingInsights = usePendingInsights();
+  const insights = useRespecStore((s) => s.insights);
 
-  const thinking = agentActivity.filter((e) => e.status === 'thinking');
-  const completed = agentActivity.filter((e) => e.status !== 'thinking');
+  const pendingInsights = useMemo(() => insights.filter((i) => !i.accepted), [insights]);
+  const thinking = useMemo(() => agentActivity.filter((e) => e.status === 'thinking'), [agentActivity]);
+  const completed = useMemo(() => agentActivity.filter((e) => e.status !== 'thinking'), [agentActivity]);
 
   const insightCount = pendingInsights.length;
 
@@ -54,7 +56,6 @@ export function AgentActivityRail() {
           transition={{ duration: 0.2 }}
           className="flex h-full w-80 shrink-0 flex-col overflow-hidden border-l border-border bg-background"
         >
-          {/* Header */}
           <div className="flex items-center justify-between px-3 py-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold">Agent Activity</span>
@@ -73,7 +74,6 @@ export function AgentActivityRail() {
 
           <Separator />
 
-          {/* Content area */}
           <div className="flex flex-1 flex-col overflow-hidden">
             {agentActivity.length === 0 && pendingInsights.length === 0 ? (
               <p className="px-3 py-6 text-center text-sm text-muted-foreground">
@@ -81,35 +81,25 @@ export function AgentActivityRail() {
               </p>
             ) : (
               <>
-                {/* Active section */}
                 {thinking.length > 0 && (
                   <div aria-live="polite" className="px-3 py-2">
                     <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Active
                     </span>
                     <div className="mt-1 space-y-2">
-                      <AnimatePresence>
-                        {thinking.map((entry) => (
-                          <motion.div
-                            key={entry.id}
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                          >
-                            <AgentBubble
-                              agentName={entry.agentName}
-                              message={entry.message}
-                            />
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
+                      {thinking.map((entry) => (
+                        <AgentBubble
+                          key={entry.id}
+                          agentName={entry.agentName}
+                          message={entry.message}
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
 
                 {thinking.length > 0 && completed.length > 0 && <Separator />}
 
-                {/* Log section */}
                 {completed.length > 0 && (
                   <div className="flex min-h-0 flex-1 flex-col px-3 py-2">
                     <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -123,7 +113,6 @@ export function AgentActivityRail() {
                   </div>
                 )}
 
-                {/* Insights section */}
                 {pendingInsights.length > 0 && (
                   <>
                     <Separator />

@@ -1,14 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
-  useNodesState,
-  useEdgesState,
   type Node,
   type Edge,
   BackgroundVariant,
@@ -17,13 +14,13 @@ import '@xyflow/react/dist/style.css';
 import { AnimatePresence } from 'framer-motion';
 import { useRespecStore } from '@/lib/store';
 import { computeCrossLinks } from '@/lib/cross-linker';
+import { parseSpec } from '@/lib/spec-parser';
+import { sampleRequirements, sampleDesign, sampleTasks } from '@/data/sample-specs';
 import { nodeTypes } from '@/components/canvas/nodes';
 import { edgeTypes } from '@/components/canvas/edges';
 import ApprovalBar from '@/components/canvas/overlays/ApprovalBar';
 import AnnotationPopover from '@/components/canvas/overlays/AnnotationPopover';
 import AgentActivityRail from '@/components/rail';
-import { sampleRequirements, sampleDesign, sampleTasks } from '@/data/sample-specs';
-import { parseSpec } from '@/lib/spec-parser';
 import type { ParsedSpec, CrossLink, AgentInsight } from '@/lib/types';
 
 const COLUMN_X = { requirements: 0, design: 450, tasks: 900 };
@@ -40,14 +37,7 @@ function buildNodes(spec: ParsedSpec): Node[] {
     data: { label: '📋 Requirements' },
     selectable: false,
     draggable: false,
-    style: {
-      background: 'transparent',
-      border: 'none',
-      fontSize: '16px',
-      fontWeight: 700,
-      color: '#3b82f6',
-      width: 200,
-    },
+    style: { background: 'transparent', border: 'none', fontSize: '16px', fontWeight: 700, color: '#3b82f6', width: 200 },
   });
   nodes.push({
     id: 'header-design',
@@ -56,14 +46,7 @@ function buildNodes(spec: ParsedSpec): Node[] {
     data: { label: '🎨 Design' },
     selectable: false,
     draggable: false,
-    style: {
-      background: 'transparent',
-      border: 'none',
-      fontSize: '16px',
-      fontWeight: 700,
-      color: '#a855f7',
-      width: 200,
-    },
+    style: { background: 'transparent', border: 'none', fontSize: '16px', fontWeight: 700, color: '#a855f7', width: 200 },
   });
   nodes.push({
     id: 'header-tasks',
@@ -72,14 +55,7 @@ function buildNodes(spec: ParsedSpec): Node[] {
     data: { label: '✅ Tasks' },
     selectable: false,
     draggable: false,
-    style: {
-      background: 'transparent',
-      border: 'none',
-      fontSize: '16px',
-      fontWeight: 700,
-      color: '#22c55e',
-      width: 200,
-    },
+    style: { background: 'transparent', border: 'none', fontSize: '16px', fontWeight: 700, color: '#22c55e', width: 200 },
   });
 
   spec.requirements.forEach((req, i) => {
@@ -119,61 +95,32 @@ function buildEdges(crossLinks: CrossLink[]): Edge[] {
     target: link.targetId,
     type: 'crosslink',
     data: { type: link.type, strength: link.strength },
-    animated: true,
   }));
 }
 
 export default function CanvasPage() {
-  const router = useRouter();
   const spec = useRespecStore((s) => s.spec);
+  const setSpec = useRespecStore((s) => s.setSpec);
   const setHoveredNodeId = useRespecStore((s) => s.setHoveredNodeId);
   const setSelectedNodeId = useRespecStore((s) => s.setSelectedNodeId);
   const addInsight = useRespecStore((s) => s.addInsight);
   const addAgentLog = useRespecStore((s) => s.addAgentLog);
   const updateAgentLog = useRespecStore((s) => s.updateAgentLog);
-  const setSpec = useRespecStore((s) => s.setSpec);
-  const setRawMarkdown = useRespecStore((s) => s.setRawMarkdown);
+  const loaded = useRef(false);
   const agentsRanRef = useRef(false);
 
-  // Auto-load demo data if no spec is loaded (e.g. direct URL access)
+  // Auto-load demo data
   useEffect(() => {
-    if (!spec) {
+    if (!spec && !loaded.current) {
+      loaded.current = true;
       const parsed = parseSpec(sampleRequirements, sampleDesign, sampleTasks);
       setSpec(parsed);
-      setRawMarkdown({
-        requirements: sampleRequirements,
-        design: sampleDesign,
-        tasks: sampleTasks,
-      });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [spec, setSpec]);
 
-  const crossLinks = useMemo(
-    () => (spec ? computeCrossLinks(spec) : []),
-    [spec],
-  );
-
-  const initialNodes = useMemo(
-    () => (spec ? buildNodes(spec) : []),
-    [spec],
-  );
-  const initialEdges = useMemo(
-    () => buildEdges(crossLinks),
-    [crossLinks],
-  );
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  // Sync nodes/edges when spec changes — use a ref to track previous spec
-  const prevSpecRef = useRef(spec);
-  useEffect(() => {
-    if (spec && spec !== prevSpecRef.current) {
-      prevSpecRef.current = spec;
-      setNodes(buildNodes(spec));
-      setEdges(buildEdges(computeCrossLinks(spec)));
-    }
-  }, [spec]); // eslint-disable-line react-hooks/exhaustive-deps
+  const nodes = useMemo(() => (spec ? buildNodes(spec) : []), [spec]);
+  const crossLinks = useMemo(() => (spec ? computeCrossLinks(spec) : []), [spec]);
+  const edges = useMemo(() => buildEdges(crossLinks), [crossLinks]);
 
   // Run agents on load
   useEffect(() => {
@@ -200,15 +147,10 @@ export default function CanvasPage() {
           status: 'complete',
           message: `Found ${data.insights?.length || 0} alignment issues`,
         });
-        data.insights?.forEach((insight: AgentInsight) => {
-          addInsight(insight);
-        });
+        data.insights?.forEach((insight: AgentInsight) => addInsight(insight));
       })
       .catch(() => {
-        updateAgentLog(driftLogId, {
-          status: 'error',
-          message: 'DriftDetector failed',
-        });
+        updateAgentLog(driftLogId, { status: 'error', message: 'DriftDetector failed' });
       });
 
     const gapLogId = crypto.randomUUID();
@@ -231,28 +173,22 @@ export default function CanvasPage() {
           status: 'complete',
           message: `Found ${data.insights?.length || 0} suggestions`,
         });
-        data.insights?.forEach((insight: AgentInsight) => {
-          addInsight(insight);
-        });
+        data.insights?.forEach((insight: AgentInsight) => addInsight(insight));
       })
       .catch(() => {
-        updateAgentLog(gapLogId, {
-          status: 'error',
-          message: 'GapFinder failed',
-        });
+        updateAgentLog(gapLogId, { status: 'error', message: 'GapFinder failed' });
       });
   }, [spec]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onNodeMouseEnter = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      setHoveredNodeId(node.id);
-    },
+    (_: React.MouseEvent, node: Node) => setHoveredNodeId(node.id),
     [setHoveredNodeId],
   );
 
-  const onNodeMouseLeave = useCallback(() => {
-    setHoveredNodeId(null);
-  }, [setHoveredNodeId]);
+  const onNodeMouseLeave = useCallback(
+    () => setHoveredNodeId(null),
+    [setHoveredNodeId],
+  );
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
@@ -276,8 +212,6 @@ export default function CanvasPage() {
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onNodeMouseEnter={onNodeMouseEnter}

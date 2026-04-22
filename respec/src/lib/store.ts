@@ -139,15 +139,17 @@ export const useRespecStore = create<RespecState>((set, get) => ({
 }));
 
 // Selector helpers
+const EMPTY_ANNOTATIONS: import('./types').Annotation[] = [];
+
 export const useAnnotationsForTarget = (targetId: string) =>
-  useRespecStore((state) => state.annotations[targetId] || []);
+  useRespecStore((state) => state.annotations[targetId] ?? EMPTY_ANNOTATIONS);
 
 export const useAnnotationCount = () =>
   useRespecStore((state) =>
     Object.values(state.annotations).reduce((sum, arr) => sum + arr.length, 0)
   );
 
-export const usePendingInsights = () =>
+export const usePendingInsightCount = () =>
   useRespecStore((state) =>
-    state.insights.filter((i) => !i.accepted)
+    state.insights.filter((i) => !i.accepted).length
   );

@@ -16,7 +16,8 @@ const agentIcons: Record<AgentInsight['agentName'], string> = {
 };
 
 function AgentInsightCardInner({ data }: NodeProps & { data: AgentInsight }) {
-  const { acceptInsight, dismissInsight } = useRespecStore();
+  const acceptInsight = useRespecStore((s) => s.acceptInsight);
+  const dismissInsight = useRespecStore((s) => s.dismissInsight);
 
   const isError = data.severity === 'error';
 

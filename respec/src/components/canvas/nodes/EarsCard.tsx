@@ -15,8 +15,10 @@ const priorityColor: Record<Requirement['priority'], string> = {
   could: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
 };
 
+const EMPTY_ANNOTATIONS: never[] = [];
+
 function EarsCardInner({ data, id }: NodeProps & { data: Requirement }) {
-  const annotations = useRespecStore((s) => s.annotations[data.id] || []);
+  const annotations = useRespecStore((s) => s.annotations[data.id] ?? EMPTY_ANNOTATIONS);
 
   return (
     <motion.div
