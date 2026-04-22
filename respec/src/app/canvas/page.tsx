@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useCallback, useState } from 'react';
+import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ReactFlow,
@@ -14,7 +14,7 @@ import {
   BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useRespecStore } from '@/lib/store';
 import { computeCrossLinks } from '@/lib/cross-linker';
 import { nodeTypes } from '@/components/canvas/nodes';
@@ -22,7 +22,7 @@ import { edgeTypes } from '@/components/canvas/edges';
 import ApprovalBar from '@/components/canvas/overlays/ApprovalBar';
 import AnnotationPopover from '@/components/canvas/overlays/AnnotationPopover';
 import AgentActivityRail from '@/components/rail';
-import type { ParsedSpec, CrossLink } from '@/lib/types';
+import type { ParsedSpec, CrossLink, AgentInsight } from '@/lib/types';
 
 const COLUMN_X = { requirements: 0, design: 450, tasks: 900 };
 const CARD_GAP = 200;
@@ -31,7 +31,6 @@ const CARD_START_Y = 80;
 function buildNodes(spec: ParsedSpec): Node[] {
   const nodes: Node[] = [];
 
-  // Column headers
   nodes.push({
     id: 'header-req',
     type: 'default',
@@ -81,7 +80,6 @@ function buildNodes(spec: ParsedSpec): Node[] {
     },
   });
 
-  // Requirement nodes
   spec.requirements.forEach((req, i) => {
     nodes.push({
       id: req.id,
@@ -91,7 +89,6 @@ function buildNodes(spec: ParsedSpec): Node[] {
     });
   });
 
-  // Design nodes
   spec.design.forEach((de, i) => {
     nodes.push({
       id: de.id,
@@ -101,7 +98,6 @@ function buildNodes(spec: ParsedSpec): Node[] {
     });
   });
 
-  // Task nodes
   spec.tasks.forEach((task, i) => {
     nodes.push({
       id: task.id,
@@ -133,7 +129,7 @@ export default function CanvasPage() {
   const addInsight = useRespecStore((s) => s.addInsight);
   const addAgentLog = useRespecStore((s) => s.addAgentLog);
   const updateAgentLog = useRespecStore((s) => s.updateAgentLog);
-  const [agentsRan, setAgentsRan] = useState(false);
+  const agentsRanRef = useRef(false);
 
   const crossLinks = useMemo(
     () => (spec ? computeCrossLinks(spec) : []),
@@ -152,27 +148,28 @@ export default function CanvasPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Sync when spec changes
+  // Sync nodes/edges when spec changes — use a ref to track previous spec
+  const prevSpecRef = useRef(spec);
   useEffect(() => {
-    if (spec) {
+    if (spec && spec !== prevSpecRef.current) {
+      prevSpecRef.current = spec;
       setNodes(buildNodes(spec));
       setEdges(buildEdges(computeCrossLinks(spec)));
     }
-  }, [spec, setNodes, setEdges]);
+  }, [spec]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Redirect if no spec loaded
   useEffect(() => {
     if (!spec) {
-      router.push('/');
+      router.replace('/');
     }
   }, [spec, router]);
 
   // Run agents on load
   useEffect(() => {
-    if (!spec || agentsRan) return;
-    setAgentsRan(true);
+    if (!spec || agentsRanRef.current) return;
+    agentsRanRef.current = true;
 
-    // Run DriftDetector
     const driftLogId = crypto.randomUUID();
     addAgentLog({
       id: driftLogId,
@@ -193,7 +190,7 @@ export default function CanvasPage() {
           status: 'complete',
           message: `Found ${data.insights?.length || 0} alignment issues`,
         });
-        data.insights?.forEach((insight: import('@/lib/types').AgentInsight) => {
+        data.insights?.forEach((insight: AgentInsight) => {
           addInsight(insight);
         });
       })
@@ -204,7 +201,6 @@ export default function CanvasPage() {
         });
       });
 
-    // Run GapFinder
     const gapLogId = crypto.randomUUID();
     addAgentLog({
       id: gapLogId,
@@ -225,7 +221,7 @@ export default function CanvasPage() {
           status: 'complete',
           message: `Found ${data.insights?.length || 0} suggestions`,
         });
-        data.insights?.forEach((insight: import('@/lib/types').AgentInsight) => {
+        data.insights?.forEach((insight: AgentInsight) => {
           addInsight(insight);
         });
       })
@@ -235,7 +231,7 @@ export default function CanvasPage() {
           message: 'GapFinder failed',
         });
       });
-  }, [spec, agentsRan, addInsight, addAgentLog, updateAgentLog]);
+  }, [spec]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onNodeMouseEnter = useCallback(
     (_: React.MouseEvent, node: Node) => {
@@ -250,7 +246,6 @@ export default function CanvasPage() {
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
-      // Don't select header nodes
       if (node.id.startsWith('header-')) return;
       setSelectedNodeId(node.id);
     },
