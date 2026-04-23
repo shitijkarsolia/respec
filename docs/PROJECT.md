@@ -291,4 +291,28 @@ Plannotator is retrospective — review a plan after the agent made it. Respec i
 
 **Production URL**: https://respec-five.vercel.app
 
-**GitHub**: (push to create public repo for Devpost submission)
+**GitHub**: https://github.com/shitijkarsolia/respec (private)
+
+**VS Code Extension**: `respec-0.1.0.vsix` (194KB, in `respec-extension/`)
+
+---
+
+## Two Delivery Modes
+
+### 1. VS Code Extension (Primary — for Kiro IDE)
+Install the `.vsix` in Kiro. It reads `.kiro/specs/` directly, renders the canvas in a webview panel, and communicates with Kiro's AI through hooks (file-based `agent_prompt` triggers). No copy-paste, no external AI costs.
+
+### 2. Web App (Fallback — for demo/standalone)
+Visit https://respec-five.vercel.app. Click "Try Demo" for pre-loaded data, or "Upload Specs" to paste your own markdown. Agents run as deterministic API routes.
+
+---
+
+## Kiro Hook Integration
+
+The extension uses Kiro's hook system for AI-powered features:
+
+- **DriftDetector hook**: Fires on spec file save → `agent_prompt` cross-checks requirements against tasks → writes issues to `.kiro/respec/insights.json`
+- **GapFinder hook**: Fires on requirements.md save → `agent_prompt` analyzes for missing edge cases → appends suggestions to insights.json
+- **FeedbackApplier hook**: Fires when `.kiro/respec/feedback.md` is written → `agent_prompt` reads structured feedback → updates spec files
+
+This means Kiro's own AI handles all the heavy lifting. The extension just reads files, renders the canvas, and writes feedback files. Zero external API costs.
