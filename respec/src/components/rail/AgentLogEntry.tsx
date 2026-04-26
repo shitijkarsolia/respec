@@ -3,11 +3,12 @@
 import { motion } from 'framer-motion';
 import type { AgentLogEntry as AgentLogEntryType } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Check, X, Loader2 } from 'lucide-react';
 
-const statusIcon: Record<AgentLogEntryType['status'], string> = {
-  complete: '✓',
-  error: '✕',
-  thinking: '⟳',
+const statusIcon: Record<AgentLogEntryType['status'], React.ReactNode> = {
+  complete: <Check className="h-3 w-3" />,
+  error: <X className="h-3 w-3" />,
+  thinking: <Loader2 className="h-3 w-3 animate-spin" />,
 };
 
 const statusColor: Record<AgentLogEntryType['status'], string> = {
@@ -35,7 +36,7 @@ export function AgentLogEntry({ entry }: AgentLogEntryProps) {
     <motion.div
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ type: "spring", stiffness: 100, damping: 20 }}
       className="flex items-start gap-2 px-1 py-1 text-xs"
     >
       <span className={cn('shrink-0 font-mono', statusColor[entry.status])}>

@@ -5,6 +5,7 @@ import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { motion } from 'framer-motion';
 import type { Task } from '@/lib/types';
+import { useRespecStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
 const MAX_SUBTASKS = 4;
@@ -16,6 +17,10 @@ const statusConfig: Record<Task['status'], { label: string; pillClass: string }>
 };
 
 function TaskCardInner({ data }: NodeProps & { data: Task }) {
+  const approvalStatus = useRespecStore((s) => s.approvalStatus);
+  const isApproved = approvalStatus === 'approved';
+  const selectedNodeId = useRespecStore((s) => s.selectedNodeId);
+  const isSelected = selectedNodeId === data.id;
   const { label, pillClass } = statusConfig[data.status];
   const visibleSubtasks = data.subtasks.slice(0, MAX_SUBTASKS);
   const overflow = data.subtasks.length - MAX_SUBTASKS;
@@ -24,15 +29,26 @@ function TaskCardInner({ data }: NodeProps & { data: Task }) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+      transition={{ type: "spring", stiffness: 100, damping: 20 }}
       className={cn(
-        'relative rounded-lg border-l-4 border-green-500 bg-white shadow-sm dark:bg-zinc-900',
+        'relative rounded-lg border-l-4 bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] dark:bg-zinc-900 dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.4)] dark:border dark:border-zinc-800',
+        isApproved
+          ? 'border-green-500 shadow-green-100 dark:shadow-green-900/20 ring-1 ring-green-200 dark:ring-green-800'
+          : 'border-green-500 dark:border-l-green-400',
+        isSelected && !isApproved && 'ring-2 ring-green-500/60 ring-offset-2 ring-offset-white dark:ring-offset-zinc-950',
         'min-w-[300px] max-w-[360px] p-3',
-        'transition-shadow hover:shadow-md',
+        'transition-all hover:scale-[1.02] hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.6)] dark:hover:border-zinc-700',
       )}
     >
       <Handle type="target" position={Position.Left} className="!bg-green-500" />
       <Handle type="source" position={Position.Right} className="!bg-green-500" />
+
+      {/* Approved badge */}
+      {isApproved && (
+        <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-white text-[10px] shadow">
+          ✓
+        </span>
+      )}
 
       {/* Header */}
       <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-t-lg -mx-3 -mt-3 px-3 py-2 mb-2 flex items-center gap-2">

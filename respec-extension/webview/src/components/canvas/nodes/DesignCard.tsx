@@ -1,4 +1,4 @@
-
+'use client';
 
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
@@ -6,7 +6,10 @@ import type { NodeProps } from '@xyflow/react';
 import { motion } from 'framer-motion';
 import type { DesignElement } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { useRespecStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
+import { MermaidRenderer } from '@/components/canvas/MermaidRenderer';
+import { BarChart3 } from 'lucide-react';
 
 const typeLabel: Record<DesignElement['type'], string> = {
   component: 'Component',
@@ -16,19 +19,35 @@ const typeLabel: Record<DesignElement['type'], string> = {
 };
 
 function DesignCardInner({ data }: NodeProps & { data: DesignElement }) {
+  const approvalStatus = useRespecStore((s) => s.approvalStatus);
+  const isApproved = approvalStatus === 'approved';
+  const selectedNodeId = useRespecStore((s) => s.selectedNodeId);
+  const isSelected = selectedNodeId === data.id;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+      transition={{ type: "spring", stiffness: 100, damping: 20 }}
       className={cn(
-        'relative rounded-lg border-l-4 border-purple-500 bg-white shadow-sm dark:bg-zinc-900',
+        'relative rounded-lg border-l-4 bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] dark:bg-zinc-900 dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.4)] dark:border dark:border-zinc-800',
+        isApproved
+          ? 'border-green-500 shadow-green-100 dark:shadow-green-900/20 ring-1 ring-green-200 dark:ring-green-800'
+          : 'border-purple-500 dark:border-l-purple-400',
+        isSelected && !isApproved && 'ring-2 ring-purple-500/60 ring-offset-2 ring-offset-white dark:ring-offset-zinc-950',
         'min-w-[300px] max-w-[360px] p-3',
-        'transition-shadow hover:shadow-md',
+        'transition-all hover:scale-[1.02] hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.6)] dark:hover:border-zinc-700',
       )}
     >
       <Handle type="target" position={Position.Left} className="!bg-purple-500" />
       <Handle type="source" position={Position.Right} className="!bg-purple-500" />
+
+      {/* Approved badge */}
+      {isApproved && (
+        <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-white text-[10px] shadow">
+          ✓
+        </span>
+      )}
 
       {/* Header */}
       <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-t-lg -mx-3 -mt-3 px-3 py-2 mb-2 flex items-center justify-between gap-2">
@@ -40,11 +59,17 @@ function DesignCardInner({ data }: NodeProps & { data: DesignElement }) {
         </Badge>
       </div>
 
-      {/* Diagram indicator */}
+      {/* Diagram */}
       {data.type === 'diagram' && (
-        <div className="mb-1.5 flex items-center gap-1 rounded-md border border-dashed border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 px-2 py-1.5 text-xs text-purple-600 dark:text-purple-400">
-          📊 Diagram
-        </div>
+        data.mermaidCode ? (
+          <div className="mb-1.5">
+            <MermaidRenderer code={data.mermaidCode} id={data.id} />
+          </div>
+        ) : (
+          <div className="mb-1.5 flex items-center gap-1 rounded-md border border-dashed border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 px-2 py-1.5 text-xs text-purple-600 dark:text-purple-400">
+            <BarChart3 className="h-3 w-3 inline" /> Diagram
+          </div>
+        )
       )}
 
       {/* Description */}

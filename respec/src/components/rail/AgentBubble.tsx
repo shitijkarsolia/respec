@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 const agentColors: Record<string, string> = {
   DriftDetector: 'bg-red-500',
   GapFinder: 'bg-amber-500',
-  FeedbackCompiler: 'bg-blue-500',
+  FeedbackCompiler: 'bg-emerald-500',
   TestSynthesizer: 'bg-purple-500',
 };
 
