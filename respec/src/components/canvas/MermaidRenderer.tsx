@@ -11,6 +11,7 @@ interface MermaidRendererProps {
 function initMermaid(dark: boolean) {
   mermaid.initialize({
     startOnLoad: false,
+    securityLevel: 'strict',
     theme: dark ? 'dark' : 'default',
     themeVariables: dark
       ? {
@@ -35,15 +36,33 @@ export function MermaidRenderer({ code, id }: MermaidRendererProps) {
   const mermaidId = `mermaid-${id ?? reactId}`.replace(/:/g, '-');
   const [svg, setSvg] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  // Track dark mode so the diagram re-renders when the theme toggles
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== 'undefined' &&
+    document.documentElement.classList.contains('dark')
+  );
+
+  // Observe theme changes on <html> so mermaid re-renders with the correct theme
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    const isDark = document.documentElement.classList.contains('dark');
+    // Use a theme-scoped render ID so mermaid re-renders when the theme changes
+    const renderKey = `${mermaidId}-${isDark ? 'd' : 'l'}`;
     initMermaid(isDark);
 
     (async () => {
       try {
-        const { svg: rendered } = await mermaid.render(mermaidId, code);
+        const { svg: rendered } = await mermaid.render(renderKey, code);
         if (!cancelled) {
           setSvg(rendered);
           setError(false);
@@ -59,9 +78,9 @@ export function MermaidRenderer({ code, id }: MermaidRendererProps) {
     return () => {
       cancelled = true;
       // Clean up the temp element mermaid may leave behind
-      document.getElementById('d' + mermaidId)?.remove();
+      document.getElementById('d' + renderKey)?.remove();
     };
-  }, [code, mermaidId]);
+  }, [code, mermaidId, isDark]);
 
   if (error) {
     return (

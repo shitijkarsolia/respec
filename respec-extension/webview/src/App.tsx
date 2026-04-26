@@ -177,6 +177,17 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept keyboard events when focus is inside an input, textarea, select, or contenteditable
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
       if (e.key === 'Escape') {
         setSelectedNodeId(null);
         return;

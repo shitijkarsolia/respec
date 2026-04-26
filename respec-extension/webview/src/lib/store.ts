@@ -32,6 +32,7 @@ interface RespecState {
   addAnnotation: (annotation: Annotation) => void;
   removeAnnotation: (targetId: string, annotationId: string) => void;
   clearAnnotations: () => void;
+  setInsights: (insights: AgentInsight[]) => void;
   addInsight: (insight: AgentInsight) => void;
   acceptInsight: (id: string) => void;
   dismissInsight: (id: string) => void;
@@ -90,6 +91,8 @@ export const useRespecStore = create<RespecState>((set, get) => ({
     }),
 
   clearAnnotations: () => set({ annotations: {} }),
+
+  setInsights: (insights) => set({ insights }),
 
   addInsight: (insight) =>
     set((state) => ({ insights: [...state.insights, insight] })),

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRespecStore } from '@/lib/store';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +27,15 @@ export default function AnnotationPopover() {
   const [content, setContent] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Ref to track and clear the success-state timeout on unmount / early close
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear success timer on unmount to avoid state updates on an unmounted component
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
 
   // Auto-focus textarea when popover opens
   useEffect(() => {
@@ -37,7 +46,7 @@ export default function AnnotationPopover() {
     }
   }, [selectedNodeId, showSuccess]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!selectedNodeId || !content.trim()) return;
 
     const annotation: Annotation = {
@@ -54,33 +63,45 @@ export default function AnnotationPopover() {
     setContent('');
     setAction('comment');
     setShowSuccess(true);
-    setTimeout(() => {
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    successTimerRef.current = setTimeout(() => {
       setShowSuccess(false);
       setSelectedNodeId(null);
     }, 800);
-  };
+  }, [selectedNodeId, content, action, addAnnotation, setSelectedNodeId]);
 
   const handleCancel = () => {
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
     setContent('');
     setAction('comment');
     setSelectedNodeId(null);
   };
 
+  // Keep a ref to the latest handleSubmit so the keydown listener doesn't need
+  // to be re-attached on every keystroke (avoids stale closures over content/action).
+  const handleSubmitRef = useRef(handleSubmit);
+  useEffect(() => {
+    handleSubmitRef.current = handleSubmit;
+  }, [handleSubmit]);
+
+  // Attach the keydown listener once per open/close cycle (stable deps)
   useEffect(() => {
     if (!selectedNodeId) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (successTimerRef.current) clearTimeout(successTimerRef.current);
         setContent('');
         setAction('comment');
         setSelectedNodeId(null);
       }
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-        handleSubmit();
+        e.preventDefault();
+        handleSubmitRef.current();
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [selectedNodeId, content, action]);
+  }, [selectedNodeId, setSelectedNodeId]);
 
   return (
     <AnimatePresence>

@@ -12,14 +12,63 @@ interface FeedbackModalProps {
 
 export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps) {
   const [copied, setCopied] = useState(false);
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => { closeRef.current?.focus(); }, []);
+  // Clear copied timer on unmount to avoid setting state after the modal closes
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
+
+  // Focus trap: keep keyboard focus inside the dialog while it's open
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    // Auto-focus the first focusable element (Copy button)
+    first?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+
+    dialog.addEventListener('keydown', handleKeyDown);
+    return () => dialog.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(feedback);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(feedback);
+      setCopied(true);
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard write failed (e.g., missing permissions or insecure context)
+    }
   };
 
   return (
@@ -32,6 +81,7 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
         onClick={onClose}
       >
         <motion.div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="feedback-title"
@@ -70,7 +120,7 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
                   </>
                 )}
               </Button>
-              <Button ref={closeRef} size="sm" onClick={onClose} className="active:scale-[0.97] transition-transform">
+              <Button size="sm" onClick={onClose} className="active:scale-[0.97] transition-transform">
                 Close
               </Button>
             </div>
