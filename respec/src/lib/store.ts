@@ -95,11 +95,37 @@ export const useRespecStore = create<RespecState>((set, get) => ({
     set((state) => ({ insights: [...state.insights, insight] })),
 
   acceptInsight: (id) =>
-    set((state) => ({
-      insights: state.insights.map((i) =>
-        i.id === id ? { ...i, accepted: true } : i
-      ),
-    })),
+    set((state) => {
+      const insight = state.insights.find((i) => i.id === id);
+      if (!insight || !state.spec) {
+        return {
+          insights: state.insights.map((i) =>
+            i.id === id ? { ...i, accepted: true } : i
+          ),
+        };
+      }
+
+      const index = state.spec.requirements.length + 1;
+      const newRequirement: import('./types').Requirement = {
+        id: `FR-99.${index}`,
+        type: 'SHALL',
+        trigger: '',
+        response: insight.suggestion ?? insight.message,
+        priority: 'should',
+        status: 'draft',
+        rawText: insight.suggestion ?? insight.message,
+      };
+
+      return {
+        insights: state.insights.map((i) =>
+          i.id === id ? { ...i, accepted: true } : i
+        ),
+        spec: {
+          ...state.spec,
+          requirements: [...state.spec.requirements, newRequirement],
+        },
+      };
+    }),
 
   dismissInsight: (id) =>
     set((state) => ({
