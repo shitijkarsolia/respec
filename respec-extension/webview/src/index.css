@@ -53,3 +53,72 @@ body {
   font-family: var(--vscode-font-family, system-ui, -apple-system, sans-serif);
   font-size: var(--vscode-font-size, 13px);
 }
+
+@keyframes shimmer-bar {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(5, 150, 105, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(5, 150, 105, 0.5), 0 0 60px rgba(5, 150, 105, 0.15); }
+}
+
+@keyframes dashMove {
+  to { stroke-dashoffset: -20; }
+}
+
+.react-flow__controls {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid rgba(228, 228, 231, 0.5) !important;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden !important;
+}
+
+.vscode-dark .react-flow__controls,
+.dark .react-flow__controls {
+  background: rgba(24, 24, 27, 0.7) !important;
+  border-color: rgba(63, 63, 70, 0.5) !important;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(228, 228, 231, 0.3) !important;
+  transition: background-color 0.15s !important;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(244, 244, 245, 0.8) !important;
+}
+
+.vscode-dark .react-flow__controls-button,
+.dark .react-flow__controls-button {
+  border-bottom-color: rgba(63, 63, 70, 0.3) !important;
+  fill: #a1a1aa !important;
+}
+
+.vscode-dark .react-flow__controls-button:hover,
+.dark .react-flow__controls-button:hover {
+  background: rgba(39, 39, 42, 0.8) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+/* Accessibility: disable all animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -9,7 +9,7 @@ import {
   BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useRespecStore } from '@/lib/store';
 import { computeCrossLinks } from '@/lib/cross-linker';
 import { parseSpec } from '@/lib/spec-parser';
@@ -30,25 +30,22 @@ function buildNodes(spec: ParsedSpec): Node[] {
   const nodes: Node[] = [];
 
   nodes.push({
-    id: 'header-req', type: 'default',
-    position: { x: COLUMN_X.requirements + 60, y: 0 },
-    data: { label: '📋 Requirements' },
+    id: 'header-req', type: 'columnHeader',
+    position: { x: COLUMN_X.requirements + 20, y: 0 },
+    data: { label: 'Requirements', color: '#059669', count: spec.requirements.length },
     selectable: false, draggable: false,
-    style: { background: 'transparent', border: 'none', fontSize: '16px', fontWeight: 700, color: '#3b82f6', width: 200 },
   });
   nodes.push({
-    id: 'header-design', type: 'default',
-    position: { x: COLUMN_X.design + 60, y: 0 },
-    data: { label: '🎨 Design' },
+    id: 'header-design', type: 'columnHeader',
+    position: { x: COLUMN_X.design + 20, y: 0 },
+    data: { label: 'Design', color: '#a855f7', count: spec.design.length },
     selectable: false, draggable: false,
-    style: { background: 'transparent', border: 'none', fontSize: '16px', fontWeight: 700, color: '#a855f7', width: 200 },
   });
   nodes.push({
-    id: 'header-tasks', type: 'default',
-    position: { x: COLUMN_X.tasks + 60, y: 0 },
-    data: { label: '✅ Tasks' },
+    id: 'header-tasks', type: 'columnHeader',
+    position: { x: COLUMN_X.tasks + 20, y: 0 },
+    data: { label: 'Tasks', color: '#22c55e', count: spec.tasks.length },
     selectable: false, draggable: false,
-    style: { background: 'transparent', border: 'none', fontSize: '16px', fontWeight: 700, color: '#22c55e', width: 200 },
   });
 
   spec.requirements.forEach((req, i) => {
@@ -171,23 +168,71 @@ export default function App() {
     [setSelectedNodeId],
   );
 
+  // Keyboard navigation
+  const selectedNodeId = useRespecStore((s) => s.selectedNodeId);
+  const contentNodeIds = useMemo(
+    () => nodes.filter((n) => !n.id.startsWith('header-')).map((n) => n.id),
+    [nodes],
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedNodeId(null);
+        return;
+      }
+
+      if (!contentNodeIds.length) return;
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const currentIdx = selectedNodeId ? contentNodeIds.indexOf(selectedNodeId) : -1;
+        const next = e.shiftKey
+          ? (currentIdx <= 0 ? contentNodeIds.length - 1 : currentIdx - 1)
+          : (currentIdx >= contentNodeIds.length - 1 ? 0 : currentIdx + 1);
+        setSelectedNodeId(contentNodeIds[next]);
+        return;
+      }
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const currentIdx = selectedNodeId ? contentNodeIds.indexOf(selectedNodeId) : -1;
+        const next = e.key === 'ArrowDown'
+          ? Math.min(currentIdx + 1, contentNodeIds.length - 1)
+          : Math.max(currentIdx - 1, 0);
+        setSelectedNodeId(contentNodeIds[next]);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [contentNodeIds, selectedNodeId, setSelectedNodeId]);
+
   if (!spec) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--muted-foreground)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: 8 }}>
-            Re<span style={{ color: '#3b82f6' }}>spec</span>
-          </h2>
-          <p>Waiting for Kiro specs...</p>
-          <p style={{ fontSize: '0.75rem', marginTop: 8 }}>Loading demo data in a moment</p>
+      <div className="flex items-center justify-center h-screen bg-zinc-50 dark:bg-zinc-950">
+        <div className="space-y-4 w-80">
+          <div className="h-8 w-48 mx-auto rounded-md bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
+          <div className="h-4 w-64 mx-auto rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
+          <div className="flex gap-4 justify-center mt-8">
+            <div className="h-32 w-24 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 animate-pulse" />
+            <div className="h-32 w-24 rounded-lg bg-purple-100 dark:bg-purple-900/20 animate-pulse" />
+            <div className="h-32 w-24 rounded-lg bg-green-100 dark:bg-green-900/20 animate-pulse" />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ height: '100vh', width: '100vw', display: 'flex' }}>
-      <div style={{ flex: 1, position: 'relative' }}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, delay: 0.1 }}
+      style={{ height: '100vh', width: '100vw', display: 'flex' }}
+    >
+      <div className="flex-1 relative bg-gradient-to-br from-zinc-50/50 via-transparent to-emerald-50/20 dark:from-zinc-950/50 dark:via-transparent dark:to-emerald-950/10">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -202,16 +247,17 @@ export default function App() {
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+          <Background variant={BackgroundVariant.Dots} gap={24} size={0.8} color="rgba(161,161,170,0.3)" />
           <Controls />
           <MiniMap
             nodeColor={(node) => {
-              if (node.type === 'ears') return '#3b82f6';
+              if (node.type === 'ears') return '#059669';
               if (node.type === 'design') return '#a855f7';
               if (node.type === 'task') return '#22c55e';
               return '#94a3b8';
             }}
-            maskColor="rgba(0,0,0,0.1)"
+            maskColor="rgba(0,0,0,0.08)"
+            className="!bg-white/70 dark:!bg-zinc-900/70 !backdrop-blur-md !rounded-lg !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-lg"
           />
         </ReactFlow>
 
@@ -223,6 +269,6 @@ export default function App() {
       </div>
 
       <AgentActivityRail />
-    </div>
+    </motion.div>
   );
 }
