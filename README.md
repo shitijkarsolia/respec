@@ -22,11 +22,7 @@ AI coding agents generate structured specs (requirements, design, tasks) but dev
 
 ## Demo
 
-<!-- Add a screenshot of the Respec canvas here -->
-![Respec Canvas](docs/screenshot-placeholder.png)
-<!-- Replace the above with an actual screenshot of the three-column canvas view -->
-
-> Try it live at [respec-five.vercel.app](https://respec-five.vercel.app)
+> **See it in action:** Explore the interactive three-column canvas with cross-linking arcs, inline annotations, and multi-agent validation at the [**Live Demo**](https://respec-five.vercel.app).
 
 ---
 
@@ -122,6 +118,35 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+---
+
+## Development
+
+### Web App
+
+```bash
+cd respec
+npm run dev          # Start development server
+npm run build        # Production build
+npm run lint         # Run linter
+```
+
+### Extension
+
+```bash
+cd respec-extension
+npm run build:ext      # Build extension host (esbuild)
+npm run build:webview  # Build webview panel (Vite)
+npm run build          # Build both (extension host + webview)
+npm run package        # Package .vsix for distribution
+```
+
+### Webview Dev Server
+
+```bash
+cd respec-extension/webview && npm run dev
+```
 
 ---
 

@@ -21,8 +21,8 @@ flowchart LR
         FeedbackAPI["POST /api/agents/feedback<br/>FeedbackCompiler"]
     end
 
-    subgraph AWS["AWS"]
-        Bedrock["Bedrock / Claude<br/>(Strands SDK)"]
+    subgraph AWS["AWS (Planned)"]
+        Bedrock["Bedrock / Claude<br/>(Planned)"]
     end
 
     subgraph VSCode["VS Code / Kiro"]
@@ -38,15 +38,17 @@ flowchart LR
     NextApp --> DriftAPI
     NextApp --> GapAPI
     NextApp --> FeedbackAPI
-    SpecAPI --> Bedrock
-    DriftAPI --> Bedrock
-    GapAPI --> Bedrock
-    FeedbackAPI --> Bedrock
+    SpecAPI -.-> Bedrock
+    DriftAPI -.-> Bedrock
+    GapAPI -.-> Bedrock
+    FeedbackAPI -.-> Bedrock
 
     Extension --> KiroSpecs
     Extension --> Hooks
-    Hooks --> Bedrock
+    Hooks -.-> Bedrock
 ```
+
+> **Note:** Agents currently use deterministic logic (set operations, pattern matching, and template formatting) for reliability and fast response times. The architecture is designed for drop-in replacement with AWS Bedrock/Claude via the Strands SDK when LLM-powered analysis is desired. Dashed arrows indicate planned connections.
 
 ---
 
