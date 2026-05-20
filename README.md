@@ -1,185 +1,80 @@
 # Respec
 
-**Visual annotation layer for spec-driven development**
+**Visual review UI for Kiro-style specs.**
 
-Transform structured markdown specs into interactive, cross-linked canvases with AI agent validation.
+Respec turns `requirements.md`, `design.md`, and `tasks.md` into an interactive canvas where reviewers can see coverage, flag issues, compile feedback, and approve a spec.
 
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![React Flow](https://img.shields.io/badge/React_Flow-12-ff0072?style=flat-square)](https://reactflow.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
-[![Live Demo](https://img.shields.io/badge/Live_Demo-respec--five.vercel.app-00C853?style=flat-square&logo=vercel)](https://respec-five.vercel.app)
+[Live Demo](https://respec-five.vercel.app) | [Architecture](docs/ARCHITECTURE.md)
 
----
+![Respec canvas](docs/assets/respec-canvas.png)
 
-## What is Respec?
+## Demo Flow
 
-AI coding agents generate structured specs (requirements, design, tasks) but developers still review them as raw markdown with no visual layer, no cross-referencing between documents, and no structured feedback loop. Respec bridges this gap by rendering specs as an interactive three-column canvas where requirements, design elements, and tasks are visually linked, annotatable, and validated by AI agents in real time. It is the PR review UI for specs.
+The demo now runs as a complete review loop:
 
-[**Live Demo**](https://respec-five.vercel.app)
+| Start | Review |
+|-------|--------|
+| ![Home screen](docs/assets/respec-home.png) | ![Canvas review](docs/assets/respec-canvas.png) |
 
----
+| Annotate | Compile feedback |
+|----------|------------------|
+| ![Annotation flow](docs/assets/respec-annotate.png) | ![Compiled feedback](docs/assets/respec-feedback.png) |
 
-## Demo
+1. Launch the Pomodoro Timer demo.
+2. Use the demo panel to add a sample annotation to an unlinked task.
+3. Click **Request Changes** to compile structured feedback.
+4. Continue reviewing or approve the spec.
 
-> **See it in action:** Explore the interactive three-column canvas with cross-linking arcs, inline annotations, and multi-agent validation at the [**Live Demo**](https://respec-five.vercel.app).
+## What It Shows
 
----
+- Three-column spec canvas: requirements, design, tasks.
+- Cross-links from requirements to implementation work.
+- Deterministic DriftDetector and GapFinder demo agents.
+- Typed annotations: comment, split, remove, clarify.
+- FeedbackCompiler output ready to paste into Kiro or another agent.
+- VS Code extension path that reads `.kiro/specs/` and writes `.kiro/respec/` review artifacts.
 
-## Features
-
-### Three-Column Canvas
-Requirements, design elements, and tasks rendered as color-coded cards in a zoomable, pannable React Flow canvas. Each column uses distinct styling: blue EARS cards for requirements, purple cards for design, and green kanban cards for tasks.
-
-### Cross-Linking Arcs
-Hover any requirement to see animated SVG arcs connecting it to every task and design element that implements it. Arcs use glow effects and color coding to show relationship types at a glance.
-
-### Inline Annotation
-Click any card to open an annotation popover with four action types: comment, split, remove, and clarify. Annotations are tracked per-card with badge counts and persist in the session state.
-
-### Multi-Agent Validation
-Three AI agents run automatically on spec load. DriftDetector checks alignment between requirements, design, and tasks. GapFinder identifies missing edge cases and requirements gaps. FeedbackCompiler compiles annotations into structured prompts.
-
-### Streaming Card Animation
-Cards appear one-by-one with 120ms stagger intervals, simulating live spec generation. Edges only render when both endpoint nodes are visible, creating a natural build-up effect.
-
-### Approval Workflow
-A bottom approval bar tracks pending annotations. "Request Changes" triggers the FeedbackCompiler to produce a structured prompt for spec regeneration. "Approve" clears all annotations and marks the spec as accepted.
-
-### Agent Activity Rail
-A collapsible right sidebar displays real-time agent status with thinking animations, completion timestamps, and insight cards. Each insight has Accept/Dismiss actions for incorporating agent suggestions.
-
-### Dark Mode
-Full dark mode support with a toolbar toggle. Preference persists to localStorage. All cards, overlays, edges, and the agent rail adapt to the selected theme.
-
----
-
-## Architecture Overview
-
-The system follows a pipeline architecture: markdown specs flow through a parser into typed JSON, which feeds React Flow for rendering and a cross-linker for edge computation. Three validation agents run in parallel on spec load to surface insights. For detailed diagrams, see the [Architecture Diagrams](docs/architecture-diagram.md).
-
----
-
-## Tech Stack
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Framework | Next.js 16 (App Router) | Server-side rendering, API routes, fast builds |
-| Canvas | React Flow (@xyflow/react) | Node/edge rendering, zoom/pan, custom node types |
-| Layout | Dagre | Automatic graph layout for three-column positioning |
-| State | Zustand | Lightweight state management with selectors |
-| UI Components | shadcn/ui | Pre-built accessible components |
-| Animations | Framer Motion | Card entrance animations, popover transitions |
-| Styling | Tailwind CSS 4 | Utility-first styling with dark mode support |
-| Diagrams | Mermaid.js | In-canvas diagram rendering from spec markdown |
-| Deployment | Vercel | Instant deploys, serverless API routes |
-
----
-
-## Project Structure
-
-```
-respec/
-├── respec/                  # Next.js 16 web application
-│   ├── src/
-│   │   ├── app/             # App Router pages and API routes
-│   │   ├── components/      # Canvas nodes, edges, overlays, rail, UI
-│   │   ├── lib/             # Spec parser, cross-linker, store, types
-│   │   └── data/            # Sample spec data for demo mode
-│   └── package.json
-├── respec-extension/        # VS Code extension
-│   ├── src/                 # Extension host code
-│   ├── webview/             # Webview panel UI
-│   └── hooks/               # Kiro hook definitions
-├── .kiro/                   # Kiro specs, steering files, hooks, agents
-│   ├── specs/               # EARS requirements, design, tasks
-│   ├── steering/            # Code standards, agent behavior, UI guidelines
-│   ├── hooks/               # File-based agent triggers
-│   └── agents/              # Custom agent definitions
-└── docs/                    # Architecture diagrams, technical writeup
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm
-
-### Installation
+## Run Locally
 
 ```bash
 git clone https://github.com/shitijkarsolia/respec.git
 cd respec/respec
-npm install
+npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+Open [http://localhost:3000](http://localhost:3000).
 
----
-
-## Development
-
-### Web App
+## Verify
 
 ```bash
 cd respec
-npm run dev          # Start development server
-npm run build        # Production build
-npm run lint         # Run linter
-```
-
-### Extension
-
-```bash
-cd respec-extension
-npm run build:ext      # Build extension host (esbuild)
-npm run build:webview  # Build webview panel (Vite)
-npm run build          # Build both (extension host + webview)
-npm run package        # Package .vsix for distribution
-```
-
-### Webview Dev Server
-
-```bash
-cd respec-extension/webview && npm run dev
-```
-
----
-
-## VS Code Extension
-
-The VS Code extension provides an in-editor canvas that reads `.kiro/specs/` directly from the workspace. It uses Kiro hooks for AI-powered features: DriftDetector fires on spec save, GapFinder runs on requirements changes, and FeedbackApplier processes structured feedback.
-
-### Build the Extension
-
-```bash
-cd respec-extension
-npm install
+npm ci
+npm run lint
 npm run build
-npm run package
+npm audit
+
+cd ../respec-extension
+npm ci
+cd webview && npm ci && cd ..
+npm run build
+npm audit
+cd webview && npm audit
 ```
 
-This produces a `.vsix` file that can be installed in VS Code or Kiro.
+## Repo Map
 
----
+```text
+respec/
+├── respec/             # Next.js web demo
+├── respec-extension/   # VS Code extension + webview
+├── .kiro/              # Example Kiro specs, hooks, and steering
+└── docs/               # One architecture/walkthrough doc plus screenshots
+```
 
-## Links
+## Notes
 
-- [Live Demo](https://respec-five.vercel.app)
-- [Architecture Diagrams](docs/architecture-diagram.md)
-- [Technical Writeup](docs/PROJECT.md)
-
----
-
-## Built By
-
-Team of 3 - Kiro Spark Challenge at ASU, April 2026
-
----
+Built by a three-person team for the Kiro Spark Challenge at ASU. The agent layer is deterministic for demo reliability; the architecture keeps a clear path for Bedrock/Claude-powered agents later.
 
 ## License
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRespecStore, useAnnotationCount } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -8,45 +8,54 @@ import { cn } from '@/lib/utils';
 import FeedbackModal from './FeedbackModal';
 import { Check } from 'lucide-react';
 
+type ConfettiPiece = {
+  id: number;
+  colorIndex: number;
+  originX: number;
+  originY: number;
+  x: number;
+  y: number;
+  scale: number;
+  rotate: number;
+  duration: number;
+};
+
 export default function ApprovalBar() {
   const approvalStatus = useRespecStore((s) => s.approvalStatus);
   const annotations = useRespecStore((s) => s.annotations);
   const requestChanges = useRespecStore((s) => s.requestChanges);
   const approve = useRespecStore((s) => s.approve);
+  const setApprovalStatus = useRespecStore((s) => s.setApprovalStatus);
   const annotationCount = useAnnotationCount();
 
   const [feedbackText, setFeedbackText] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [confirmApprove, setConfirmApprove] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [confettiPieces, setConfettiPieces] = useState<ConfettiPiece[]>([]);
 
   const spec = useRespecStore((s) => s.spec);
 
-  // Reset confirm state after 3 seconds
-  useEffect(() => {
-    if (confirmApprove) {
-      confirmTimerRef.current = setTimeout(() => {
-        setConfirmApprove(false);
-      }, 3000);
-    }
-    return () => {
-      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
-    };
-  }, [confirmApprove]);
-
   const handleApproveClick = useCallback(() => {
-    if (!confirmApprove) {
-      setConfirmApprove(true);
-      return;
-    }
-    setConfirmApprove(false);
     approve();
-    setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 1500);
-  }, [confirmApprove, approve]);
+    const originX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500;
+    const originY = typeof window !== 'undefined' ? window.innerHeight - 60 : 500;
+    setConfettiPieces(
+      Array.from({ length: 24 }, (_, i) => ({
+        id: i,
+        colorIndex: i % 5,
+        originX,
+        originY,
+        x: originX + (Math.random() - 0.5) * 600,
+        y: originY - Math.random() * 400 - 100,
+        scale: Math.random() * 0.8 + 0.4,
+        rotate: Math.random() * 720 - 360,
+        duration: 1 + Math.random() * 0.5,
+      })),
+    );
+    setTimeout(() => setConfettiPieces([]), 1500);
+  }, [approve]);
 
   const handleRequestChanges = async () => {
+    if (annotationCount === 0) return;
     requestChanges();
     setLoading(true);
 
@@ -66,6 +75,16 @@ export default function ApprovalBar() {
       setLoading(false);
     }
   };
+
+  const renderApproveButton = () => (
+    <Button
+      size="sm"
+      onClick={handleApproveClick}
+      className="bg-green-600 text-white transition-transform hover:bg-green-700 active:scale-[0.97]"
+    >
+      Approve
+    </Button>
+  );
 
   return (
     <>
@@ -99,9 +118,20 @@ export default function ApprovalBar() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="rounded-md bg-amber-100 px-4 py-1.5 text-sm font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                className="flex items-center gap-2"
               >
-                Changes requested — feedback compiled
+                <span className="rounded-md bg-amber-100 px-4 py-1.5 text-sm font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                  Changes requested
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setApprovalStatus('pending')}
+                  className="active:scale-[0.97] transition-transform"
+                >
+                  Continue Reviewing
+                </Button>
+                {renderApproveButton()}
               </motion.div>
             )}
 
@@ -113,21 +143,17 @@ export default function ApprovalBar() {
                 exit={{ opacity: 0 }}
                 className="flex gap-2"
               >
-                <Button variant="outline" size="sm" onClick={handleRequestChanges} disabled={loading} className="active:scale-[0.97] transition-transform">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRequestChanges}
+                  disabled={loading || annotationCount === 0}
+                  className="active:scale-[0.97] transition-transform"
+                  title={annotationCount === 0 ? 'Add an annotation first' : undefined}
+                >
                   {loading ? 'Compiling...' : 'Request Changes'}
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={handleApproveClick}
-                  className={cn(
-                    'active:scale-[0.97] transition-transform',
-                    confirmApprove
-                      ? 'bg-amber-500 text-white hover:bg-amber-600'
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  )}
-                >
-                  {confirmApprove ? 'Confirm?' : 'Approve'}
-                </Button>
+                {renderApproveButton()}
               </motion.div>
             )}
           </AnimatePresence>
@@ -141,28 +167,28 @@ export default function ApprovalBar() {
         />
       )}
 
-      {showConfetti && (
+      {confettiPieces.length > 0 && (
         <div className="fixed inset-0 pointer-events-none z-[100]">
-          {Array.from({ length: 24 }).map((_, i) => (
+          {confettiPieces.map((piece) => (
             <motion.div
-              key={i}
+              key={piece.id}
               initial={{
-                x: typeof window !== 'undefined' ? window.innerWidth / 2 : 500,
-                y: typeof window !== 'undefined' ? window.innerHeight - 60 : 500,
+                x: piece.originX,
+                y: piece.originY,
                 scale: 0,
                 opacity: 1,
               }}
               animate={{
-                x: (typeof window !== 'undefined' ? window.innerWidth / 2 : 500) + (Math.random() - 0.5) * 600,
-                y: (typeof window !== 'undefined' ? window.innerHeight - 60 : 500) - Math.random() * 400 - 100,
-                scale: Math.random() * 0.8 + 0.4,
+                x: piece.x,
+                y: piece.y,
+                scale: piece.scale,
                 opacity: 0,
-                rotate: Math.random() * 720 - 360,
+                rotate: piece.rotate,
               }}
-              transition={{ duration: 1 + Math.random() * 0.5, ease: 'easeOut' }}
+              transition={{ duration: piece.duration, ease: 'easeOut' }}
               className={[
                 'absolute h-2 w-2 rounded-full',
-                ['bg-emerald-500', 'bg-purple-500', 'bg-amber-500', 'bg-green-400', 'bg-rose-400'][i % 5],
+                ['bg-emerald-500', 'bg-purple-500', 'bg-amber-500', 'bg-green-400', 'bg-rose-400'][piece.colorIndex],
               ].join(' ')}
             />
           ))}

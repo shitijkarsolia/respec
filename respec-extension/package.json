@@ -1,13 +1,17 @@
 {
-  "name": "respec",
+  "name": "respec-vscode",
   "displayName": "Respec — Visual Spec Review",
   "description": "Visual annotation layer for Kiro's spec-driven development. Three-column canvas with cross-linking, multi-agent validation, and structured feedback.",
   "version": "0.1.0",
-  "publisher": "respec",
+  "publisher": "shitijkarsolia",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Visualization", "Other"],
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
   "activationEvents": [
     "workspaceContains:.kiro/specs"
   ],
@@ -37,10 +41,10 @@
     "package": "npm run build && vsce package --no-dependencies"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
     "@types/node": "^20.0.0",
-    "esbuild": "^0.20.0",
-    "typescript": "^5.3.0",
-    "@vscode/vsce": "^2.22.0"
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.3.0"
   }
 }

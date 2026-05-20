@@ -20,6 +20,7 @@ import { nodeTypes } from '@/components/canvas/nodes';
 import { edgeTypes } from '@/components/canvas/edges';
 import ApprovalBar from '@/components/canvas/overlays/ApprovalBar';
 import AnnotationPopover from '@/components/canvas/overlays/AnnotationPopover';
+import GuidedDemoPanel from '@/components/canvas/overlays/GuidedDemoPanel';
 import AgentActivityRail from '@/components/rail';
 import CanvasToolbar from '@/components/canvas/CanvasToolbar';
 import type { ParsedSpec, CrossLink, AgentInsight } from '@/lib/types';
@@ -99,6 +100,7 @@ function buildEdges(crossLinks: CrossLink[]): Edge[] {
 export default function CanvasPage() {
   const spec = useRespecStore((s) => s.spec);
   const setSpec = useRespecStore((s) => s.setSpec);
+  const setRawMarkdown = useRespecStore((s) => s.setRawMarkdown);
   const setHoveredNodeId = useRespecStore((s) => s.setHoveredNodeId);
   const setSelectedNodeId = useRespecStore((s) => s.setSelectedNodeId);
   const addInsight = useRespecStore((s) => s.addInsight);
@@ -107,7 +109,6 @@ export default function CanvasPage() {
   const loaded = useRef(false);
   const agentsRanRef = useRef(false);
   const [visibleCount, setVisibleCount] = useState(0);
-  const streamingRef = useRef(false);
 
   // Auto-load demo data
   useEffect(() => {
@@ -115,8 +116,14 @@ export default function CanvasPage() {
       loaded.current = true;
       const parsed = parseSpec(sampleRequirements, sampleDesign, sampleTasks);
       setSpec(parsed);
+      setRawMarkdown({
+        requirements: sampleRequirements,
+        design: sampleDesign,
+        tasks: sampleTasks,
+      });
+      sessionStorage.setItem('respec-demo-mode', 'true');
     }
-  }, [spec, setSpec]);
+  }, [spec, setSpec, setRawMarkdown]);
 
   const allNodes = useMemo(() => (spec ? buildNodes(spec) : []), [spec]);
   const crossLinks = useMemo(() => (spec ? computeCrossLinks(spec) : []), [spec]);
@@ -124,18 +131,23 @@ export default function CanvasPage() {
 
   // Streaming animation: reveal nodes one-by-one
   useEffect(() => {
-    if (allNodes.length === 0 || streamingRef.current) return;
-    streamingRef.current = true;
-    // Start with headers (3), then stream content nodes
-    setVisibleCount(3);
-    const contentNodes = allNodes.length - 3;
-    let i = 0;
+    if (allNodes.length === 0) return;
+    const headerCount = Math.min(3, allNodes.length);
+    let visible = headerCount;
+    const startTimer = window.setTimeout(() => setVisibleCount(headerCount), 0);
+    if (allNodes.length <= headerCount) {
+      return () => window.clearTimeout(startTimer);
+    }
+
     const interval = setInterval(() => {
-      i++;
-      setVisibleCount(3 + i);
-      if (i >= contentNodes) clearInterval(interval);
+      visible = Math.min(visible + 1, allNodes.length);
+      setVisibleCount(visible);
+      if (visible >= allNodes.length) clearInterval(interval);
     }, 120);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(startTimer);
+      clearInterval(interval);
+    };
   }, [allNodes.length]);
 
   // Only show nodes up to visibleCount
@@ -340,6 +352,7 @@ export default function CanvasPage() {
           <AnnotationPopover />
         </AnimatePresence>
 
+        <GuidedDemoPanel />
         <ApprovalBar />
       </div>
 

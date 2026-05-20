@@ -9,27 +9,20 @@ export default function CanvasToolbar() {
   const spec = useRespecStore((s) => s.spec);
   const approvalStatus = useRespecStore((s) => s.approvalStatus);
   const annotationCount = useAnnotationCount();
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('respec-theme') === 'dark',
+  );
 
   useEffect(() => {
-    const stored = localStorage.getItem('respec-theme');
-    if (stored === 'dark') {
-      document.documentElement.classList.add('dark');
-      setDark(true);
-    } else {
-      document.documentElement.classList.remove('dark');
-      setDark(false);
-    }
-  }, []);
+    document.documentElement.classList.toggle('dark', dark);
+  }, [dark]);
 
   const toggle = () => {
     const next = !dark;
     setDark(next);
     if (next) {
-      document.documentElement.classList.add('dark');
       localStorage.setItem('respec-theme', 'dark');
     } else {
-      document.documentElement.classList.remove('dark');
       localStorage.setItem('respec-theme', 'light');
     }
   };
