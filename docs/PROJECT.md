@@ -1,318 +1,158 @@
-# Respec — Project Documentation
+# Respec - Technical Writeup
 
-## The Original Idea
-
-Respec was born from a simple observation: **every AI coding agent generates plans, but nobody can review them well.**
-
-Tools like Kiro produce structured specs — `requirements.md`, `design.md`, `tasks.md` — using the EARS notation (Easy Approach to Requirements Syntax). But developers review these as raw markdown in a sidebar and type feedback in chat. There's no visual layer, no cross-referencing, no structured feedback loop.
-
-Respec is the **PR review UI for specs**. It takes the Plannotator pattern (visual annotation of agent output, 3.7k GitHub stars) and applies it to Kiro's three-phase spec workflow. The result: an interactive canvas where you can see, annotate, validate, and approve specs — with multiple AI agents running in the background to catch issues before code is written.
-
-The name "Respec" is a play on "re-spec" (review your specs) and "respect" (give specs the attention they deserve).
+**A visual annotation layer that transforms structured specs into interactive, agent-validated canvases.**
 
 ---
 
-## What We Built
+## Problem Statement
 
-### Core Product
+AI coding agents have fundamentally changed how software is planned. Tools like Kiro generate structured specifications -- requirements documents in EARS notation, design breakdowns with component diagrams, and phased task lists with dependency tracking. These specs represent significant planning work, but the review experience has not kept pace with the generation capabilities.
 
-A Next.js web application with a React Flow canvas that visualizes Kiro specs as interactive, cross-linked cards across three columns:
+Today, developers review AI-generated specs as raw markdown in a sidebar panel. They scroll through dozens of requirements, mentally trace which tasks implement which requirements, and type feedback in a chat window hoping the agent interprets their intent correctly. There is no visual representation of the relationships between documents, no way to see orphaned requirements that nothing implements, and no structured mechanism to communicate changes back to the agent.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  [Respec]          Pomodoro Timer Spec            [Dark Mode]   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                    ┌──────────┐ │
-│  📋 Requirements    🎨 Design       ✅ Tasks       │  Agent   │ │
-│  ┌──────────┐     ┌──────────┐    ┌──────────┐    │ Activity │ │
-│  │ FR-1.1   │────▸│ Timer    │───▸│ T-1:     │    │          │ │
-│  │ WHEN user│     │Component │    │ Build    │    │ ✓ Drift  │ │
-│  │ clicks   │     │          │    │ Timer    │    │ ✓ Gap    │ │
-│  │ start... │     └──────────┘    └──────────┘    │          │ │
-│  └──────────┘                                      │ Insights │ │
-│  ┌──────────┐     ┌──────────┐    ┌──────────┐    │ ⚠ FR-2.3│ │
-│  │ FR-1.2   │     │ Sequence │    │ T-2:     │    │ ⚠ FR-4.1│ │
-│  │ WHEN the │     │ Diagram  │    │ Build    │    │          │ │
-│  │ timer... │     │ (mermaid)│    │ Display  │    └──────────┘ │
-│  └──────────┘     └──────────┘    └──────────┘                  │
-│                                                                  │
-├──────────────────────────────────────────────────────────────────┤
-│  0 annotations pending          [Request Changes]  [Approve]    │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### Feature Breakdown
-
-#### 1. Three-Column Canvas (React Flow)
-- Requirements rendered as blue-bordered EARS cards with keyword pills (WHEN, WHILE, WHERE, IF)
-- Design elements rendered as purple-bordered cards with type badges (Component, API, Data Model, Diagram)
-- Tasks rendered as green-bordered cards with status pills (To Do, In Progress, Done)
-- All cards are draggable, zoomable, and pannable via React Flow
-
-#### 2. Cross-Linking Arcs
-- Hover any requirement card → animated SVG arcs draw to every task and design element that implements it
-- Color-coded: blue for "implements", orange for "depends", red for "conflicts"
-- Glow effect on hover using SVG filters (feGaussianBlur)
-- Arcs are computed from `implementsRequirements` arrays in the parsed spec data
-
-#### 3. Inline Annotation
-- Click any card → annotation popover appears (bottom-right)
-- Four action types: Comment, Split, Remove, Clarify
-- Annotations stored in Zustand with per-card counts shown as badges
-- "Request Changes" compiles all annotations into a structured prompt via the FeedbackCompiler agent
-
-#### 4. Multi-Agent Validation
-Three AI agents run automatically when specs are loaded:
-
-- **DriftDetector**: Cross-checks alignment between requirements ↔ design ↔ tasks. Flags orphaned requirements (not referenced by any task) and unlinked tasks (not implementing any requirement). Results appear as warning/error badges in the agent rail.
-
-- **GapFinder**: Analyzes requirements for missing edge cases — error handling, security, empty states, responsive design, spec completeness. Returns suggestions with "Accept" / "Dismiss" actions.
-
-- **FeedbackCompiler**: Triggered by "Request Changes". Compiles human annotations into a structured markdown prompt formatted for Kiro consumption:
-  ```
-  Please update the spec with the following changes:
-  
-  ## Requirements
-  - [FR-1.1] Comment — "Timer should support configurable durations"
-  
-  ## Tasks
-  - [T-3] Action: REMOVE — "Redundant task"
-  ```
-
-#### 5. Streaming Card Animation
-When the canvas loads, cards appear one-by-one with 120ms stagger — simulating live Kiro spec generation. Headers appear instantly, then content nodes stream in. Edges only render when both endpoints are visible.
-
-#### 6. Approval Flow
-- Bottom bar shows pending annotation count
-- "Request Changes" → triggers FeedbackCompiler → shows compiled feedback in a modal with copy-to-clipboard
-- "Approve" → green "Spec Approved" banner, all annotations cleared
-
-#### 7. Agent Activity Rail
-- Collapsible right sidebar (320px)
-- Shows real-time agent status: "thinking..." with bouncing dots, then completion with timestamp
-- Lists all agent insights with severity badges and Accept/Dismiss buttons
-- ARIA live regions for accessibility
-
-#### 8. Dark Mode
-- Toggle in toolbar (canvas) and top-right corner (homepage)
-- Persisted to localStorage under `respec-theme`
-- All cards, overlays, and the rail adapt to dark mode
-
-#### 9. Homepage
-- Two modes: "Try Demo" (pre-loaded Pomodoro Timer spec) and "Upload Specs" (paste your own markdown)
-- Demo mode loads 12 requirements, 5 design elements, and 8 tasks with intentional drift bugs
+This gap between plan generation and plan review means specs often ship with alignment issues, missing edge cases, and requirements that no task addresses. The feedback loop is unstructured: a developer types "fix requirement 3" and hopes the agent understands which aspect needs fixing and how the change cascades through design and tasks. Respec closes this gap.
 
 ---
 
-## How It Works (Technical)
+## Solution Overview
 
-### Architecture
+Respec is the PR review UI for specs. It renders the three-phase spec workflow (requirements, design, tasks) as an interactive three-column canvas where every element is a distinct card, relationships are visible as animated arcs, and feedback is structured through typed annotations.
 
-```
-Browser (Next.js 16 App Router)
-├── Homepage (/) — spec upload or demo loader
-├── Canvas (/canvas) — React Flow + overlays + agent rail
-└── API Routes
-    ├── POST /api/specs — parse markdown → structured JSON
-    ├── POST /api/agents/drift — run DriftDetector
-    ├── POST /api/agents/gap — run GapFinder
-    └── POST /api/agents/feedback — compile annotations → prompt
-```
+The three-column approach mirrors how specs are organized but adds a spatial dimension: requirements on the left, design in the center, tasks on the right. Cross-linking arcs draw connections between related items, making it immediately visible which requirements have implementations and which are orphaned. Hovering a requirement highlights every task and design element that references it.
 
-### Data Flow
-
-1. **Spec Ingestion**: User uploads markdown or clicks "Try Demo". The `spec-parser.ts` module parses EARS-notation requirements, design sections, and task checklists into typed JSON (`ParsedSpec`).
-
-2. **Canvas Rendering**: `buildNodes()` converts the parsed spec into React Flow nodes positioned in three columns. `computeCrossLinks()` scans `implementsRequirements` arrays to build edges between related items.
-
-3. **Streaming**: On mount, a `setInterval` reveals nodes one-by-one (120ms each). Edges only appear when both source and target nodes are visible.
-
-4. **Agent Validation**: Two `fetch()` calls fire on spec load — DriftDetector and GapFinder. Each returns `AgentInsight[]` objects that populate the rail and can flag cards.
-
-5. **Annotation → Feedback**: User clicks card → popover → types annotation → stored in Zustand. "Request Changes" sends all annotations to `/api/agents/feedback`, which groups them by type and returns a structured prompt.
-
-### Tech Stack
-
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| Framework | Next.js 16 (App Router) | Server-side rendering, API routes, fast builds |
-| Canvas | React Flow (@xyflow/react) | Node/edge rendering, zoom/pan, custom nodes |
-| State | Zustand | Lightweight, no boilerplate, stable selectors |
-| UI Components | shadcn/ui | Pre-built accessible components (Button, Badge, Popover, Textarea) |
-| Animations | Framer Motion | Card entrance animations, popover transitions |
-| Styling | Tailwind CSS | Utility-first, dark mode support |
-| Deployment | Vercel | Instant deploys, serverless API routes |
-
-### Key Files
-
-```
-respec/src/
-├── app/
-│   ├── page.tsx                    # Homepage with demo/upload
-│   ├── canvas/page.tsx             # Main canvas with streaming + agents
-│   └── api/agents/
-│       ├── drift/route.ts          # DriftDetector endpoint
-│       ├── gap/route.ts            # GapFinder endpoint
-│       └── feedback/route.ts       # FeedbackCompiler endpoint
-├── components/
-│   ├── canvas/
-│   │   ├── CanvasToolbar.tsx       # Top bar with logo + dark mode
-│   │   ├── nodes/
-│   │   │   ├── EarsCard.tsx        # Requirement card (blue)
-│   │   │   ├── DesignCard.tsx      # Design element card (purple)
-│   │   │   ├── TaskCard.tsx        # Task card (green)
-│   │   │   └── AgentInsightCard.tsx # Agent suggestion card (amber/red)
-│   │   ├── edges/
-│   │   │   └── CrossLinkEdge.tsx   # Animated glow edge
-│   │   └── overlays/
-│   │       ├── AnnotationPopover.tsx # Click-to-annotate panel
-│   │       ├── ApprovalBar.tsx      # Bottom approve/reject bar
-│   │       └── FeedbackModal.tsx    # Compiled feedback display
-│   └── rail/
-│       ├── AgentActivityRail.tsx    # Right sidebar
-│       ├── AgentBubble.tsx          # "Thinking..." animation
-│       └── AgentLogEntry.tsx        # Completed agent log
-├── lib/
-│   ├── types.ts                    # All TypeScript interfaces
-│   ├── spec-parser.ts              # Markdown → ParsedSpec
-│   ├── cross-linker.ts             # Compute requirement ↔ task edges
-│   ├── store.ts                    # Zustand global state
-│   └── utils.ts                    # cn() helper
-└── data/
-    └── sample-specs.ts             # Demo Pomodoro Timer spec data
-```
+The annotation workflow replaces unstructured chat feedback with typed actions. Instead of typing "split requirement 3 into two parts," a reviewer clicks the requirement card, selects "Split," and describes the desired split. When ready, the FeedbackCompiler agent compiles all annotations into a structured markdown prompt formatted for the AI agent to consume without ambiguity. The result is a closed-loop system where specs are generated, visually reviewed, annotated with precision, and regenerated with clear instructions.
 
 ---
 
-## How to Use It
+## Technical Architecture Deep-Dive
 
-### Quick Start (Demo Mode)
+### Frontend: React Flow Canvas
 
-1. Visit the homepage (or https://respec-five.vercel.app)
-2. Click "Launch Canvas with Demo Data"
-3. Watch cards stream in across three columns
-4. Hover any requirement card to see cross-linking arcs
-5. Click any card to open the annotation popover
-6. Check the Agent Activity rail for DriftDetector and GapFinder results
-7. Click "Approve" or "Request Changes" in the bottom bar
+The canvas is built on React Flow (@xyflow/react) with custom node types for each spec element category. EarsCard renders requirements with EARS keyword pills (WHEN, WHILE, WHERE, IF) and priority badges. DesignCard renders design elements with type indicators and optional Mermaid diagram embedding. TaskCard renders tasks as kanban-style cards with status pills (To Do, In Progress, Done).
 
-### Upload Your Own Specs
+Layout is computed using the Dagre graph layout algorithm, which positions nodes in three columns with appropriate spacing. The layout runs once on spec load and respects the document ordering within each column.
 
-1. Click "Upload Specs" on the homepage
-2. Paste your Kiro-generated `requirements.md`, `design.md`, and `tasks.md`
-3. Click "Parse & Launch Canvas"
-4. The parser expects:
-   - Requirements: `- **FR-X.Y** WHEN/WHILE/WHERE/IF ... THE SYSTEM SHALL ...`
-   - Design: `### Section Title` with bullet points and optional mermaid blocks
-   - Tasks: `### T-X: Title` with `- [ ]` / `- [x]` / `- [-]` checkboxes and `**Implements:** FR-X.Y`
+Streaming animation reveals cards one-by-one at 120ms intervals on initial load. This creates a visual effect of specs "generating" in real time. Edges only render when both their source and target nodes are visible, preventing arcs from appearing before their endpoints. The stagger timing was tuned to balance perceived speed with readability.
 
-### Annotation Workflow
+Cross-link edges use a custom SVG edge component (CrossLinkEdge) with a Gaussian blur filter for a glow effect on hover. Edge opacity reflects relationship strength, and color coding distinguishes relationship types.
 
-1. Click a card on the canvas
-2. Choose an action: Comment, Split, Remove, or Clarify
-3. Type your feedback and click Submit
-4. Repeat for other cards
-5. Click "Request Changes" → the FeedbackCompiler generates a structured prompt
-6. Copy the prompt and paste it into Kiro's chat to trigger spec regeneration
+### State Management: Zustand Store
 
-### Dark Mode
+Application state lives in a single Zustand store with selector-based access patterns. The store manages:
 
-Click the sun/moon toggle in the toolbar (canvas) or top-right corner (homepage). Preference is saved to localStorage.
+- **Spec data**: The parsed spec JSON (requirements, design elements, tasks)
+- **Annotations**: Per-card annotation arrays with action types and content
+- **Agent insights**: Results from DriftDetector and GapFinder with accept/dismiss state
+- **UI state**: Selected node, rail visibility, dark mode preference, streaming progress
 
----
+Selectors provide derived state (annotation counts, filtered insights, connected nodes for a given requirement) without redundant computation. Components subscribe only to the slices they need, minimizing re-renders across the canvas.
 
-## Running Locally
+### Spec Parser
 
-```bash
-cd respec
-npm install
-npm run dev
-# Open http://localhost:3000
-```
+The spec parser (`spec-parser.ts`) converts EARS-notation markdown into typed JSON. It handles three document types:
 
-### Build for Production
+- **Requirements**: Extracts EARS keywords (WHEN, WHILE, WHERE, IF, SHALL), requirement IDs (FR-X.Y), priority levels, and the trigger/response structure
+- **Design elements**: Parses section headers as element titles, identifies type from content patterns (component, API, data model, diagram), and extracts Mermaid code blocks
+- **Tasks**: Parses task headers (T-X: Title), checkbox states for subtasks, status indicators, and `implementsRequirements` references
 
-```bash
-npm run build
-npm start
-```
+The parser uses regex-based extraction tuned to the specific format Kiro produces. Output is a `ParsedSpec` interface containing typed arrays for each category, ready for direct consumption by the node builder.
 
-### Run E2E Tests
+### Cross-Linker
 
-```bash
-npm install -D playwright
-node test-e2e.js
-```
+The cross-linker (`cross-linker.ts`) computes bidirectional relationships between spec elements. It scans `implementsRequirements` arrays in tasks and design elements to build a link map, then inverts it to provide queries in both directions: "what implements this requirement?" and "what requirements does this task address?"
+
+Key capabilities:
+- **Orphan detection**: Requirements with no implementing task or design element
+- **Unlinked task detection**: Tasks that reference no requirements
+- **Connected node queries**: Given a node ID, return all directly linked nodes for hover highlighting
+- **Link strength computation**: Based on the number of shared references between connected elements
 
 ---
 
-## Kiro Integration
+## Agent System Design
 
-### Spec Files (`.kiro/specs/respec/`)
-- `requirements.md` — EARS-notation functional and non-functional requirements
-- `design.md` — Component design, sequence diagrams, data model, WebSocket protocol
-- `tasks.md` — Phased task breakdown with dependency graph
+### DriftDetector
 
-### Steering Files (`.kiro/steering/`)
-- `code-standards.md` — Tech stack rules, naming conventions, performance rules
-- `agent-behavior.md` — Agent system prompts, trigger rules, output formats
-- `ui-guidelines.md` — Color system, animation timing, card design, accessibility
+The DriftDetector validates alignment across the three spec phases. It uses the cross-linker to identify:
 
-### Hooks (`.kiro/hooks/`)
-- `drift-on-save.json` — Triggers DriftDetector when any spec file is saved
+- **Orphaned requirements**: Requirements that no task or design element references
+- **Unlinked tasks**: Tasks with empty `implementsRequirements` arrays
+- **Misaligned references**: Tasks referencing requirement IDs that do not exist in the requirements document
+- **Coverage gaps**: Design elements with no corresponding implementation tasks
 
-### Custom Agents (`.kiro/agents/`)
-- `drift-detector.json` — Validates spec alignment
-- `gap-finder.json` — Identifies missing requirements
-- `feedback-compiler.json` — Compiles annotations into Kiro prompts
+Results surface as AgentInsightCard nodes on the canvas (positioned near the flagged element) and as entries in the Agent Activity Rail with severity badges (warning for orphans, error for invalid references).
 
----
+### GapFinder
 
-## Hackathon Context
+The GapFinder analyzes requirement text to identify common omissions. It pattern-matches against categories that specs frequently miss:
 
-Built for the **Kiro Spark Challenge** at ASU (April 24, 2026) — a 1-day hackathon themed "Upgrade Vibe Coding to Professional Spec-Driven Development."
+- **Error handling**: Requirements that describe success paths without failure modes
+- **Security**: User-facing features without authentication or authorization requirements
+- **Empty states**: UI requirements without initial/empty state definitions
+- **Responsive design**: Layout requirements without viewport adaptation
+- **Accessibility**: Interactive elements without keyboard or screen reader requirements
 
-### Judging Alignment
+Each suggestion includes a severity rating and a proposed requirement in EARS notation that the reviewer can accept or dismiss.
 
-| Track | How Respec Scores |
-|-------|------------------|
-| Build (Technical AI proficiency) | Multi-agent backend with DriftDetector, GapFinder, FeedbackCompiler |
-| Collaboration (Cross-functional innovation) | The tool itself IS about team spec review |
-| Impact (Meaningful, realistic solutions) | Every Kiro user writes specs — this is the review UI they need |
-| Story (Transparent, scalable workflows) | Cross-linking arcs literally make workflows transparent |
+### FeedbackCompiler
 
-### Differentiation from Plannotator
+The FeedbackCompiler transforms user annotations into structured output formatted for AI agent consumption. When a reviewer clicks "Request Changes," the compiler:
 
-Plannotator is retrospective — review a plan after the agent made it. Respec is **bidirectional and live**: specs update as agents work, agents update as you annotate, and the whole thing animates in real-time with streaming cards.
+1. Groups annotations by target type (requirements, design, tasks)
+2. Formats each annotation with its action type, target ID, and content
+3. Produces markdown structured for unambiguous interpretation
+4. Presents the compiled prompt in a modal with copy-to-clipboard
 
----
+The output format is designed for direct paste into Kiro or any AI coding agent, providing clear instructions without requiring the agent to interpret natural language intent.
 
-## Live Demo
+### Agent Architecture Note
 
-**Production URL**: https://respec-five.vercel.app
-
-**GitHub**: https://github.com/shitijkarsolia/respec (private)
-
-**VS Code Extension**: `respec-0.1.0.vsix` (194KB, in `respec-extension/`)
+For demo reliability, agents use deterministic logic rather than live LLM calls. DriftDetector performs set operations on ID arrays. GapFinder uses pattern matching on requirement text. FeedbackCompiler applies template-based formatting. This approach ensures consistent, fast results during demonstrations while the architecture remains designed for drop-in replacement with Bedrock-powered agents via the AWS Strands SDK.
 
 ---
 
-## Two Delivery Modes
+## Key Engineering Decisions
 
-### 1. VS Code Extension (Primary — for Kiro IDE)
-Install the `.vsix` in Kiro. It reads `.kiro/specs/` directly, renders the canvas in a webview panel, and communicates with Kiro's AI through hooks (file-based `agent_prompt` triggers). No copy-paste, no external AI costs.
-
-### 2. Web App (Fallback — for demo/standalone)
-Visit https://respec-five.vercel.app. Click "Try Demo" for pre-loaded data, or "Upload Specs" to paste your own markdown. Agents run as deterministic API routes.
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Canvas library | React Flow vs custom canvas | React Flow provides node management, zoom/pan, edge routing, and custom node support out of the box, saving weeks of implementation |
+| State management | Zustand vs Redux | Zustand offers lightweight store creation with no boilerplate, ideal for a focused application with clear state boundaries |
+| Streaming animation | 120ms stagger interval | Simulates live spec generation, creating engagement during load while remaining fast enough to not frustrate users |
+| Agent implementation | Deterministic vs LLM-powered | Deterministic logic guarantees consistent demo results; architecture supports swapping to real Bedrock agents without frontend changes |
+| Deployment | Vercel | Instant deploys from git push, serverless API routes for agent endpoints, preview URLs for every branch |
+| Requirements format | EARS notation | Industry-standard syntax for requirements engineering, already used by Kiro for spec generation |
 
 ---
 
-## Kiro Hook Integration
+## VS Code Extension
 
-The extension uses Kiro's hook system for AI-powered features:
+Respec ships as two deliverables: the web application and a VS Code extension. The extension provides the same canvas experience inside the editor, reading `.kiro/specs/` directly from the workspace file system rather than requiring upload or paste.
 
-- **DriftDetector hook**: Fires on spec file save → `agent_prompt` cross-checks requirements against tasks → writes issues to `.kiro/respec/insights.json`
-- **GapFinder hook**: Fires on requirements.md save → `agent_prompt` analyzes for missing edge cases → appends suggestions to insights.json
-- **FeedbackApplier hook**: Fires when `.kiro/respec/feedback.md` is written → `agent_prompt` reads structured feedback → updates spec files
+The extension integrates with Kiro through its hook system:
 
-This means Kiro's own AI handles all the heavy lifting. The extension just reads files, renders the canvas, and writes feedback files. Zero external API costs.
+- **DriftDetector hook**: Triggers on spec file save. Writes an `agent_prompt` that cross-checks requirements against tasks and outputs issues to `.kiro/respec/insights.json`.
+- **GapFinder hook**: Triggers on `requirements.md` modification. Analyzes for missing edge cases and appends suggestions to the insights file.
+- **FeedbackApplier hook**: Triggers when `.kiro/respec/feedback.md` is written. Reads the structured feedback and updates spec files accordingly.
+
+This hook-based approach means Kiro's own AI handles all heavy computation. The extension reads files, renders the canvas, and writes feedback files. There are zero external API costs since all AI operations run through Kiro's built-in agent infrastructure.
+
+---
+
+## Challenges and Learnings
+
+**React Flow custom node performance**: With 20+ custom nodes rendering simultaneously, initial implementations caused layout thrashing. The solution was to batch node additions during streaming and defer edge computation until both endpoints were stable. Memoization of node components with React.memo prevented unnecessary re-renders during hover interactions.
+
+**Cross-link computation optimization**: The naive O(n*m) approach to computing all cross-links became noticeable with large specs (50+ requirements). Building an inverted index during parsing reduced lookup to O(1) per query, making hover highlighting instant regardless of spec size.
+
+**Balancing agent complexity with demo reliability**: Early versions attempted real LLM calls for agent validation, but network latency and response variability made demos unpredictable. The shift to deterministic agents with LLM-compatible interfaces preserved the architecture while guaranteeing sub-100ms response times during presentations.
+
+**Streaming animation timing**: Finding the right stagger interval required iteration. Too fast (50ms) and cards appeared instantly with no effect. Too slow (300ms) and users waited impatiently. The 120ms interval with ease-out animation creates perceived intelligence without frustrating delays.
+
+---
+
+## Future Roadmap
+
+- **Real-time Kiro integration**: Live spec updates via WebSocket connection to Kiro's spec generation pipeline, enabling the canvas to update as the agent writes
+- **Collaborative editing**: Yjs-powered concurrent editing with live cursors, allowing multiple reviewers to annotate simultaneously
+- **Full LLM-powered agents**: Replace deterministic logic with Bedrock/Claude via the AWS Strands SDK for deeper semantic analysis, including natural language understanding of requirement quality
+- **Test generation from EARS requirements**: A TestSynthesizer agent that produces test cases directly from EARS-notation requirements, mapping WHEN triggers to test preconditions and SHALL responses to assertions
