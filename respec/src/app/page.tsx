@@ -317,7 +317,7 @@ export default function HomePage() {
         )}
 
         <p className="text-center text-xs text-muted-foreground">
-          Built for the Kiro Spark Challenge at ASU — April 2026
+          Built for Kiro
         </p>
       </motion.div>
 
