@@ -153,7 +153,7 @@ export default function GuidedDemoPanel() {
         id: 'feedback',
         title: 'Review the generated feedback',
         body: 'The compiled feedback is the handoff artifact. Click Close when you are ready to finish the demo approval path.',
-        target: 'feedback-modal',
+        target: 'feedback-close',
       },
       {
         id: 'approve',

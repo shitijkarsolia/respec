@@ -125,7 +125,12 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
                   </>
                 )}
               </Button>
-              <Button size="sm" onClick={handleClose} className="active:scale-[0.97] transition-transform">
+              <Button
+                data-tour="feedback-close"
+                size="sm"
+                onClick={handleClose}
+                className="active:scale-[0.97] transition-transform"
+              >
                 Close
               </Button>
             </div>
