@@ -34,7 +34,7 @@
 ## Responsive Breakpoints
 - 1080p (1920x1080): three columns visible, rail collapsed by default
 - 1440p (2560x1440): three columns + rail visible
-- Below 1080p: not supported (hackathon scope)
+- Below 1080p: graceful degradation is acceptable for the portfolio demo; desktop canvas quality is the priority
 
 ## Empty States
 - No specs loaded: centered illustration + "Upload your Kiro specs to get started" + upload button

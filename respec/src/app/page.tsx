@@ -17,7 +17,9 @@ export default function HomePage() {
   const [design, setDesign] = useState('');
   const [tasks, setTasks] = useState('');
   const [activeTab, setActiveTab] = useState<'upload' | 'demo'>('demo');
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('respec-theme') === 'dark',
+  );
   const [dragOver, setDragOver] = useState(false);
   const [launching, setLaunching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,24 +74,15 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem('respec-theme');
-    if (stored === 'dark') {
-      document.documentElement.classList.add('dark');
-      setDark(true);
-    } else {
-      document.documentElement.classList.remove('dark');
-      setDark(false);
-    }
-  }, []);
+    document.documentElement.classList.toggle('dark', dark);
+  }, [dark]);
 
   const toggleDark = () => {
     const next = !dark;
     setDark(next);
     if (next) {
-      document.documentElement.classList.add('dark');
       localStorage.setItem('respec-theme', 'dark');
     } else {
-      document.documentElement.classList.remove('dark');
       localStorage.setItem('respec-theme', 'light');
     }
   };
@@ -102,6 +95,7 @@ export default function HomePage() {
       design: sampleDesign,
       tasks: sampleTasks,
     });
+    sessionStorage.setItem('respec-demo-mode', 'true');
     setLaunching(true);
     setTimeout(() => router.push('/canvas'), 600);
   };
@@ -111,6 +105,7 @@ export default function HomePage() {
     const spec = parseSpec(requirements, design, tasks);
     setSpec(spec);
     setRawMarkdown({ requirements, design, tasks });
+    sessionStorage.removeItem('respec-demo-mode');
     setLaunching(true);
     setTimeout(() => router.push('/canvas'), 600);
   };

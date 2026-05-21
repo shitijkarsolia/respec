@@ -1,7 +1,8 @@
 {
   "name": "webview",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
+  "description": "Respec VS Code webview canvas UI.",
   "main": "index.js",
   "scripts": {
     "build": "vite build",
@@ -9,7 +10,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-separator": "^1.1.8",

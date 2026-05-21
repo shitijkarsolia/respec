@@ -60,7 +60,7 @@ const initialState = {
   isStreaming: false,
 };
 
-export const useRespecStore = create<RespecState>((set, get) => ({
+export const useRespecStore = create<RespecState>((set) => ({
   ...initialState,
 
   setSpec: (spec) => set({ spec }),

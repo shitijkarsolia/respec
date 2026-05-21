@@ -1,7 +1,7 @@
 # Steering: Respec Code Standards
 
 ## Project Context
-Respec is a visual annotation layer for Kiro's spec-driven development workflow. It's a hackathon project — prioritize working code over perfection, but keep it clean enough to demo confidently.
+Respec is a visual annotation layer for Kiro's spec-driven development workflow. It began as a hackathon project and is now presented as a portfolio demo, so keep the code easy to demo, easy to explain, and honest about what is implemented.
 
 ## Tech Stack Rules
 - Next.js 15 with App Router (no Pages Router)

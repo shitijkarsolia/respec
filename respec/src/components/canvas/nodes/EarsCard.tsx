@@ -17,7 +17,7 @@ const priorityColor: Record<Requirement['priority'], string> = {
 
 const EMPTY_ANNOTATIONS: never[] = [];
 
-function EarsCardInner({ data, id }: NodeProps & { data: Requirement }) {
+function EarsCardInner({ data }: NodeProps & { data: Requirement }) {
   const annotations = useRespecStore((s) => s.annotations[data.id] ?? EMPTY_ANNOTATIONS);
   const approvalStatus = useRespecStore((s) => s.approvalStatus);
   const isApproved = approvalStatus === 'approved';
