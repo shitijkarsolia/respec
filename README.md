@@ -4,7 +4,7 @@
 
 Respec turns `requirements.md`, `design.md`, and `tasks.md` into an interactive canvas where reviewers can see coverage, flag issues, compile feedback, and approve a spec.
 
-[Live Demo](https://respec-five.vercel.app) | [Architecture](docs/ARCHITECTURE.md)
+[Live Demo](https://respec-ai.vercel.app) | [Architecture](docs/ARCHITECTURE.md)
 
 ![Respec canvas](docs/assets/respec-canvas.png)
 
