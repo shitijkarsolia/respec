@@ -39,11 +39,12 @@ function getCardPosition(rect: DOMRect | null) {
     };
   }
 
-  const width = 320;
   const margin = 16;
-  const placeRight = rect.right + width + margin < window.innerWidth;
-  const placeLeft = rect.left - width - margin > 0;
-  const left = placeRight ? rect.right + margin : placeLeft ? rect.left - width - margin : margin;
+  const width = Math.min(320, window.innerWidth - margin * 2);
+  const placeRight = rect.right + width + margin <= window.innerWidth - margin;
+  const placeLeft = rect.left - width - margin >= margin;
+  const preferredLeft = placeRight ? rect.right + margin : placeLeft ? rect.left - width - margin : margin;
+  const left = Math.min(Math.max(preferredLeft, margin), window.innerWidth - width - margin);
   const top = Math.min(
     Math.max(rect.top + rect.height / 2 - 120, margin + 48),
     window.innerHeight - 280,
@@ -52,6 +53,7 @@ function getCardPosition(rect: DOMRect | null) {
   return {
     left,
     top,
+    width,
     transform: 'none',
   };
 }
@@ -306,7 +308,7 @@ export default function GuidedDemoPanel() {
         )}
 
         <div
-          className="pointer-events-auto fixed w-80 rounded-lg border border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+          className="pointer-events-auto fixed max-w-[calc(100vw-2rem)] rounded-lg border border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
           style={cardStyle}
           role="dialog"
           aria-label="Demo walkthrough"
@@ -335,8 +337,8 @@ export default function GuidedDemoPanel() {
             {currentStep.body}
           </p>
 
-          <div className="mt-4 flex items-center justify-between gap-2">
-            <div className="flex gap-1">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 gap-1">
               {walkthroughSteps.map((step, index) => (
                 <span
                   key={step.id}
@@ -348,7 +350,7 @@ export default function GuidedDemoPanel() {
               ))}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex shrink-0 flex-wrap justify-end gap-2">
               {stepIndex > 0 && (
                 <Button
                   type="button"
@@ -360,8 +362,8 @@ export default function GuidedDemoPanel() {
                 </Button>
               )}
               {currentStep.primaryLabel && (
-                <Button type="button" size="sm" onClick={handleTourAction} className="gap-1.5">
-                  {currentStep.primaryLabel}
+                <Button type="button" size="sm" onClick={handleTourAction} className="min-w-0 max-w-full gap-1.5">
+                  <span className="truncate">{currentStep.primaryLabel}</span>
                   {currentStep.action !== 'finish' && <ArrowRight className="h-3.5 w-3.5" />}
                 </Button>
               )}
