@@ -33,7 +33,7 @@ export default function CanvasToolbar() {
         Re<span className="text-emerald-600 dark:text-emerald-400">spec</span>
       </Link>
 
-      <span className="text-sm text-muted-foreground flex items-center gap-3">
+      <span data-tour="status-summary" className="text-sm text-muted-foreground flex items-center gap-3">
         {spec ? `${spec.requirements.length} req · ${spec.design.length} design · ${spec.tasks.length} tasks` : 'Loading...'}
         {annotationCount > 0 && (
           <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">

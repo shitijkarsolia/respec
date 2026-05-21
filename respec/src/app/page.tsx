@@ -96,6 +96,7 @@ export default function HomePage() {
       tasks: sampleTasks,
     });
     sessionStorage.setItem('respec-demo-mode', 'true');
+    sessionStorage.removeItem('respec-demo-tour-dismissed');
     setLaunching(true);
     setTimeout(() => router.push('/canvas'), 600);
   };
@@ -135,10 +136,9 @@ export default function HomePage() {
           <h1 className="text-3xl font-semibold tracking-tighter">
             Re<span className="text-emerald-600 dark:text-emerald-400">spec</span>
           </h1>
-          <p className="text-base leading-relaxed text-muted-foreground max-w-[65ch]">
-            Visual annotation layer for spec-driven development.
-            <br />
-            Turn Kiro specs into interactive canvases.
+          <p className="mx-auto flex max-w-[34rem] flex-col items-center text-center text-base leading-7 text-muted-foreground">
+            <span>Visual annotation layer for spec-driven development.</span>
+            <span>Turn Kiro specs into interactive canvases.</span>
           </p>
         </div>
 
@@ -316,7 +316,7 @@ export default function HomePage() {
         )}
 
         <p className="text-center text-xs text-muted-foreground">
-          Built for the Kiro Spark Challenge at ASU — April 2026
+          Built for Kiro
         </p>
       </motion.div>
 

@@ -122,6 +122,7 @@ export default function CanvasPage() {
         tasks: sampleTasks,
       });
       sessionStorage.setItem('respec-demo-mode', 'true');
+      sessionStorage.removeItem('respec-demo-tour-dismissed');
     }
   }, [spec, setSpec, setRawMarkdown]);
 
@@ -319,7 +320,10 @@ export default function CanvasPage() {
     >
       <CanvasToolbar />
       <div className="flex-1 flex min-h-0">
-      <div className="flex-1 relative bg-gradient-to-br from-zinc-50/50 via-transparent to-emerald-50/20 dark:from-zinc-950/50 dark:via-transparent dark:to-emerald-950/10">
+      <div
+        data-tour="canvas-stage"
+        className="flex-1 relative bg-gradient-to-br from-zinc-50/50 via-transparent to-emerald-50/20 dark:from-zinc-950/50 dark:via-transparent dark:to-emerald-950/10"
+      >
         <ReactFlow
           nodes={nodes}
           edges={edges}

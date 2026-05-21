@@ -16,6 +16,14 @@ export const metadata: Metadata = {
   title: "Respec — Visual Spec Review for Kiro",
   description:
     "Turn Kiro specs into interactive canvases. Annotate, validate, approve.",
+  icons: {
+    icon: [
+      {
+        url: "/icon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
