@@ -154,6 +154,7 @@ export const useRespecStore = create<RespecState>((set) => ({
     set({
       approvalStatus: 'approved',
       annotations: {},
+      selectedNodeId: null,
     });
   },
 

@@ -61,6 +61,7 @@ export function AgentActivityRail() {
         </motion.div>
       ) : (
         <motion.aside
+          data-tour="agent-rail"
           key="expanded"
           initial={{ width: 0, opacity: 0 }}
           animate={{ width: 320, opacity: 1 }}

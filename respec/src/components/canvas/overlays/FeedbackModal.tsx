@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Check, Copy } from 'lucide-react';
@@ -14,6 +14,10 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
   const [copied, setCopied] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleClose = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('respec-feedback-closed'));
+    onClose();
+  }, [onClose]);
 
   // Clear copied timer on unmount to avoid setting state after the modal closes
   useEffect(() => {
@@ -38,7 +42,7 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        handleClose();
         return;
       }
       if (e.key !== 'Tab' || focusable.length === 0) return;
@@ -58,7 +62,7 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
 
     dialog.addEventListener('keydown', handleKeyDown);
     return () => dialog.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [handleClose]);
 
   const handleCopy = async () => {
     try {
@@ -78,9 +82,10 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-950/60"
-        onClick={onClose}
+        onClick={handleClose}
       >
         <motion.div
+          data-tour="feedback-modal"
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
@@ -120,7 +125,7 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
                   </>
                 )}
               </Button>
-              <Button size="sm" onClick={onClose} className="active:scale-[0.97] transition-transform">
+              <Button size="sm" onClick={handleClose} className="active:scale-[0.97] transition-transform">
                 Close
               </Button>
             </div>

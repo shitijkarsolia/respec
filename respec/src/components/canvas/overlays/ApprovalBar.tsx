@@ -78,6 +78,7 @@ export default function ApprovalBar() {
 
   const renderApproveButton = () => (
     <Button
+      data-tour="approve-spec"
       size="sm"
       onClick={handleApproveClick}
       className="bg-green-600 text-white transition-transform hover:bg-green-700 active:scale-[0.97]"
@@ -89,6 +90,7 @@ export default function ApprovalBar() {
   return (
     <>
       <div
+        data-tour="approval-bar"
         className={cn(
           'fixed bottom-0 left-0 right-0 z-50 border-t px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]',
           'bg-white/80 backdrop-blur-xl border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] dark:bg-zinc-900/80 dark:border-white/5'
@@ -144,6 +146,7 @@ export default function ApprovalBar() {
                 className="flex gap-2"
               >
                 <Button
+                  data-tour="request-changes"
                   variant="outline"
                   size="sm"
                   onClick={handleRequestChanges}

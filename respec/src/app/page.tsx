@@ -96,6 +96,7 @@ export default function HomePage() {
       tasks: sampleTasks,
     });
     sessionStorage.setItem('respec-demo-mode', 'true');
+    sessionStorage.removeItem('respec-demo-tour-dismissed');
     setLaunching(true);
     setTimeout(() => router.push('/canvas'), 600);
   };
