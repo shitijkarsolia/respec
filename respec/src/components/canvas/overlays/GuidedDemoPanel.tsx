@@ -228,6 +228,14 @@ export default function GuidedDemoPanel() {
 
   const nextStep = () => setStepIndex((current) => Math.min(current + 1, walkthroughSteps.length - 1));
 
+  const previousStep = () => {
+    if (currentStep?.id === 'feedback' && approvalStatus === 'changes-requested') {
+      setStepIndex(4);
+      return;
+    }
+    setStepIndex((current) => Math.max(current - 1, 0));
+  };
+
   const handleTourAction = () => {
     if (!currentStep) return;
     if (currentStep.action === 'annotate') {
@@ -356,7 +364,7 @@ export default function GuidedDemoPanel() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setStepIndex((current) => Math.max(current - 1, 0))}
+                  onClick={previousStep}
                 >
                   Back
                 </Button>
