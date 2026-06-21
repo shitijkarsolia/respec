@@ -20,6 +20,9 @@ interface RespecState {
   agentActivity: AgentLogEntry[];
   insights: AgentInsight[];
 
+  // Graph adjacency (node id -> ids it links to/from) for focus highlighting
+  adjacency: Record<string, string[]>;
+
   // UI state
   approvalStatus: ApprovalStatus;
   railOpen: boolean;
@@ -49,6 +52,7 @@ interface RespecState {
   setHoveredNodeId: (id: string | null) => void;
   setSelectedNodeId: (id: string | null) => void;
   setIsStreaming: (streaming: boolean) => void;
+  setAdjacency: (adjacency: Record<string, string[]>) => void;
   approve: () => void;
   requestChanges: () => void;
   reset: () => void;
@@ -60,6 +64,7 @@ const initialState = {
   annotations: {} as Record<string, Annotation[]>,
   agentActivity: [] as AgentLogEntry[],
   insights: [] as AgentInsight[],
+  adjacency: {} as Record<string, string[]>,
   approvalStatus: 'pending' as ApprovalStatus,
   railOpen: true,
   hoveredNodeId: null as string | null,
@@ -159,6 +164,7 @@ export const useRespecStore = create<RespecState>((set) => ({
   setHoveredNodeId: (id) => set({ hoveredNodeId: id }),
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
   setIsStreaming: (streaming) => set({ isStreaming: streaming }),
+  setAdjacency: (adjacency) => set({ adjacency }),
 
   approve: () => {
     set({
@@ -190,6 +196,23 @@ export const usePendingInsightCount = () =>
   useRespecStore((state) =>
     state.insights.filter((i) => !i.accepted).length
   );
+
+/**
+ * Focus state for a node relative to the currently hovered/selected node:
+ * is it the focus, is it linked to the focus, or should it dim away?
+ */
+export const useNodeFocusState = (id: string) => {
+  const hoveredNodeId = useRespecStore((s) => s.hoveredNodeId);
+  const selectedNodeId = useRespecStore((s) => s.selectedNodeId);
+  const adjacency = useRespecStore((s) => s.adjacency);
+  const focusId = hoveredNodeId ?? selectedNodeId;
+  return useMemo(() => {
+    if (!focusId) return { isFocus: false, isLinked: false, isDimmed: false };
+    if (focusId === id) return { isFocus: true, isLinked: true, isDimmed: false };
+    const isLinked = adjacency[focusId]?.includes(id) ?? false;
+    return { isFocus: false, isLinked, isDimmed: !isLinked };
+  }, [focusId, id, adjacency]);
+};
 
 /** The highest-priority pending insight that targets a specific node, if any. */
 export const useInsightForTarget = (targetId: string): AgentInsight | null => {

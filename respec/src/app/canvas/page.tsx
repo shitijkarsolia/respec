@@ -104,6 +104,7 @@ export default function CanvasPage() {
   const setRawMarkdown = useRespecStore((s) => s.setRawMarkdown);
   const loadReview = useRespecStore((s) => s.loadReview);
   const setHoveredNodeId = useRespecStore((s) => s.setHoveredNodeId);
+  const setAdjacency = useRespecStore((s) => s.setAdjacency);
   const setSelectedNodeId = useRespecStore((s) => s.setSelectedNodeId);
   const addInsight = useRespecStore((s) => s.addInsight);
   const addAgentLog = useRespecStore((s) => s.addAgentLog);
@@ -164,6 +165,16 @@ export default function CanvasPage() {
   const allNodes = useMemo(() => (spec ? buildNodes(spec) : []), [spec]);
   const crossLinks = useMemo(() => (spec ? computeCrossLinks(spec) : []), [spec]);
   const allEdges = useMemo(() => buildEdges(crossLinks), [crossLinks]);
+
+  // Build an adjacency map so cards can spotlight their connected subgraph.
+  useEffect(() => {
+    const adj: Record<string, string[]> = {};
+    for (const link of crossLinks) {
+      (adj[link.sourceId] ??= []).push(link.targetId);
+      (adj[link.targetId] ??= []).push(link.sourceId);
+    }
+    setAdjacency(adj);
+  }, [crossLinks, setAdjacency]);
 
   // Node ids the agents have flagged (used to highlight them on the minimap).
   const flaggedIds = useMemo(
@@ -368,8 +379,12 @@ export default function CanvasPage() {
       <div className="flex-1 flex min-h-0">
       <div
         data-tour="canvas-stage"
-        className="flex-1 relative bg-gradient-to-br from-zinc-50/50 via-transparent to-emerald-50/20 dark:from-zinc-950/50 dark:via-transparent dark:to-emerald-950/10"
+        className="flex-1 relative bg-zinc-50/60 dark:bg-zinc-950"
       >
+        {/* Ambient lane wash: emerald → purple → green, left to right */}
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(16,185,129,0.07),transparent_32%,rgba(168,85,247,0.05)_50%,transparent_68%,rgba(34,197,94,0.07))] dark:bg-[linear-gradient(90deg,rgba(16,185,129,0.10),transparent_32%,rgba(168,85,247,0.08)_50%,transparent_68%,rgba(34,197,94,0.10))]" />
+        {/* Soft center lift / vignette to focus the eye inward */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_35%,rgba(255,255,255,0.55),transparent_70%)] dark:bg-[radial-gradient(70%_55%_at_50%_30%,rgba(255,255,255,0.04),transparent_65%)]" />
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -384,7 +399,7 @@ export default function CanvasPage() {
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={24} size={0.8} color="rgba(161,161,170,0.3)" />
+          <Background variant={BackgroundVariant.Dots} gap={26} size={1} color="rgba(148,163,184,0.22)" />
           <Controls />
           <MiniMap
             nodeColor={(node) => {
