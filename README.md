@@ -10,7 +10,7 @@ Respec turns `requirements.md`, `design.md`, and `tasks.md` into an interactive 
 
 ## Demo Flow
 
-The demo now runs as a complete review loop:
+The demo runs as a complete review loop:
 
 | Start | Review |
 |-------|--------|
@@ -20,18 +20,23 @@ The demo now runs as a complete review loop:
 |----------|------------------|
 | ![Annotation flow](docs/assets/respec-annotate.png) | ![Compiled feedback](docs/assets/respec-feedback.png) |
 
-1. Launch the Pomodoro Timer demo.
-2. Use the demo panel to add a sample annotation to an unlinked task.
-3. Click **Request Changes** to compile structured feedback.
-4. Continue reviewing or approve the spec.
+1. Pick a sample spec (Pomodoro Timer, URL Shortener API, or Realtime Chat) — or paste your own.
+2. Review the canvas: cross-links, agent flags on the cards, and the activity rail.
+3. Annotate an issue (the Pomodoro demo includes a guided walkthrough).
+4. Click **Request Changes** to compile structured feedback, then **Download** it as Markdown or **Copy** it.
+5. **Share** the review — the link rebuilds the exact annotated canvas, no backend required.
+6. Continue reviewing or approve the spec.
 
 ## What It Shows
 
 - Three-column spec canvas: requirements, design, tasks.
-- Cross-links from requirements to implementation work.
-- Deterministic DriftDetector and GapFinder demo agents.
+- Cross-links from requirements to implementation work, with agent flags surfaced on the cards and minimap.
+- Multiple sample specs plus bring-your-own upload.
+- Deterministic DriftDetector and GapFinder demo agents (a preview of what Kiro's Claude/Bedrock agents surface).
 - Typed annotations: comment, split, remove, clarify.
-- FeedbackCompiler output ready to paste into Kiro or another agent.
+- FeedbackCompiler output ready to download, copy, or paste into Kiro or another agent.
+- Shareable review links that round-trip the full canvas state through the URL.
+- Responsive layout: the canvas chrome adapts to mobile (drawer rail, bottom-sheet annotations).
 - VS Code extension path that reads `.kiro/specs/` and writes `.kiro/respec/` review artifacts.
 
 ## Run Locally
