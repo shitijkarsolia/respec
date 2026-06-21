@@ -13,12 +13,15 @@ import { Archive, Check, Home } from 'lucide-react';
 type ConfettiPiece = {
   id: number;
   colorIndex: number;
+  shape: 'circle' | 'rect';
   originX: number;
   originY: number;
   x: number;
-  y: number;
+  peakY: number;
+  fallY: number;
   scale: number;
   rotate: number;
+  delay: number;
   duration: number;
 };
 
@@ -38,24 +41,28 @@ export default function ApprovalBar() {
 
   const spec = useRespecStore((s) => s.spec);
 
-  const handleApproveClick = useCallback(() => {
+  const handleApproveClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     approve();
-    const originX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500;
-    const originY = typeof window !== 'undefined' ? window.innerHeight - 60 : 500;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const originX = rect.left + rect.width / 2;
+    const originY = rect.top + rect.height / 2;
     setConfettiPieces(
-      Array.from({ length: 24 }, (_, i) => ({
+      Array.from({ length: 40 }, (_, i) => ({
         id: i,
         colorIndex: i % 5,
+        shape: i % 3 === 0 ? 'rect' : 'circle',
         originX,
         originY,
-        x: originX + (Math.random() - 0.5) * 600,
-        y: originY - Math.random() * 400 - 100,
-        scale: Math.random() * 0.8 + 0.4,
+        x: originX + (Math.random() - 0.5) * 520,
+        peakY: originY - (150 + Math.random() * 220),
+        fallY: originY + (40 + Math.random() * 240),
+        scale: 0.5 + Math.random() * 0.7,
         rotate: Math.random() * 720 - 360,
-        duration: 1 + Math.random() * 0.5,
+        delay: Math.random() * 0.12,
+        duration: 1.1 + Math.random() * 0.6,
       })),
     );
-    setTimeout(() => setConfettiPieces([]), 1500);
+    setTimeout(() => setConfettiPieces([]), 2000);
   }, [approve]);
 
   const handleReturnHome = useCallback(() => {
@@ -226,24 +233,20 @@ export default function ApprovalBar() {
           {confettiPieces.map((piece) => (
             <motion.div
               key={piece.id}
-              initial={{
-                x: piece.originX,
-                y: piece.originY,
-                scale: 0,
-                opacity: 1,
-              }}
+              initial={{ x: piece.originX, y: piece.originY, scale: 0, opacity: 1, rotate: 0 }}
               animate={{
                 x: piece.x,
-                y: piece.y,
-                scale: piece.scale,
-                opacity: 0,
+                y: [piece.originY, piece.peakY, piece.fallY],
+                scale: [0, piece.scale, piece.scale],
+                opacity: [1, 1, 0],
                 rotate: piece.rotate,
               }}
-              transition={{ duration: piece.duration, ease: 'easeOut' }}
-              className={[
-                'absolute h-2 w-2 rounded-full',
+              transition={{ duration: piece.duration, delay: piece.delay, ease: 'easeOut', times: [0, 0.35, 1] }}
+              className={cn(
+                'absolute',
+                piece.shape === 'rect' ? 'h-2.5 w-1.5 rounded-[1px]' : 'h-2 w-2 rounded-full',
                 ['bg-emerald-500', 'bg-purple-500', 'bg-amber-500', 'bg-green-400', 'bg-rose-400'][piece.colorIndex],
-              ].join(' ')}
+              )}
             />
           ))}
         </div>

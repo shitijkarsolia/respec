@@ -118,8 +118,18 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
               Compiled Feedback
             </h3>
 
-            <div className="mb-4 max-h-64 overflow-auto rounded-lg bg-zinc-50 dark:bg-zinc-800/60 p-4 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 font-mono whitespace-pre-wrap border border-zinc-100 dark:border-zinc-700/50">
-              {feedback}
+            <div className="mb-4 max-h-64 overflow-auto rounded-lg border border-zinc-100 bg-zinc-50 p-4 font-mono text-sm leading-relaxed text-zinc-700 dark:border-zinc-700/50 dark:bg-zinc-800/60 dark:text-zinc-300">
+              {feedback.split('\n').map((line, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.035, 0.7), duration: 0.2 }}
+                  className="whitespace-pre-wrap"
+                >
+                  {line || ' '}
+                </motion.div>
+              ))}
             </div>
 
             <div className="flex justify-end gap-2">

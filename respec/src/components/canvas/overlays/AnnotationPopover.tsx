@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useRespecStore } from '@/lib/store';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { Annotation } from '@/lib/types';
 
@@ -135,20 +136,27 @@ export default function AnnotationPopover() {
             Annotating: {selectedNodeId}
           </p>
 
-          <div className="mb-3 flex gap-1" role="group" aria-label="Annotation action">
+          <div className="mb-3 flex gap-0.5 rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-800" role="group" aria-label="Annotation action">
             {actions.map((a) => (
               <button
                 key={a}
                 onClick={() => setAction(a)}
                 aria-pressed={action === a}
                 className={cn(
-                  'rounded px-2 py-1 text-xs font-medium capitalize transition-colors',
+                  'relative flex-1 rounded-md px-2 py-1 text-xs font-medium capitalize transition-colors',
                   action === a
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                    ? 'text-white'
+                    : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
                 )}
               >
-                {a}
+                {action === a && (
+                  <motion.span
+                    layoutId="annotation-action-pill"
+                    className="absolute inset-0 rounded-md bg-emerald-600 shadow-sm"
+                    transition={spring.snappy}
+                  />
+                )}
+                <span className="relative z-10">{a}</span>
               </button>
             ))}
           </div>
