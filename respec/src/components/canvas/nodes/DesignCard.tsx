@@ -63,7 +63,7 @@ function DesignCardInner({ data }: NodeProps & { data: DesignElement }) {
       {data.type === 'diagram' && (
         data.mermaidCode ? (
           <div className="mb-1.5">
-            <MermaidRenderer code={data.mermaidCode} id={data.id} />
+            <MermaidRenderer code={data.mermaidCode} id={data.id} label={data.title} />
           </div>
         ) : (
           <div className="mb-1.5 flex items-center gap-1 rounded-md border border-dashed border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 px-2 py-1.5 text-xs text-purple-600 dark:text-purple-400">
