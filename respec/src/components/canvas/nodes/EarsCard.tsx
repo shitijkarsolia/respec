@@ -4,8 +4,9 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { motion } from 'framer-motion';
+import { AlertCircle, AlertTriangle } from 'lucide-react';
 import type { Requirement } from '@/lib/types';
-import { useRespecStore } from '@/lib/store';
+import { useRespecStore, useInsightForTarget } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ function EarsCardInner({ data }: NodeProps & { data: Requirement }) {
   const isApproved = approvalStatus === 'approved';
   const selectedNodeId = useRespecStore((s) => s.selectedNodeId);
   const isSelected = selectedNodeId === data.id;
+  const insight = useInsightForTarget(data.id);
 
   const prevCount = useRef(annotations.length);
   const [pulse, setPulse] = useState(false);
@@ -60,6 +62,24 @@ function EarsCardInner({ data }: NodeProps & { data: Requirement }) {
           {data.id}
         </span>
         <div className="flex items-center gap-1.5">
+          {insight && !isApproved && (
+            <span
+              title={insight.message}
+              aria-label={`Agent flag: ${insight.message}`}
+              className={cn(
+                'flex items-center',
+                insight.severity === 'error'
+                  ? 'text-red-500'
+                  : 'text-amber-500',
+              )}
+            >
+              {insight.severity === 'error' ? (
+                <AlertCircle className="h-3.5 w-3.5" />
+              ) : (
+                <AlertTriangle className="h-3.5 w-3.5" />
+              )}
+            </span>
+          )}
           {annotations.length > 0 && (
             <span className={cn(
               'flex h-5 min-w-5 items-center justify-center rounded-full bg-zinc-200 px-1 text-[10px] font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300 transition-transform',

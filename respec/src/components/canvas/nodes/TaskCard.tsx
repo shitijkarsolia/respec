@@ -4,8 +4,9 @@ import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { motion } from 'framer-motion';
+import { AlertCircle, AlertTriangle } from 'lucide-react';
 import type { Task } from '@/lib/types';
-import { useRespecStore } from '@/lib/store';
+import { useRespecStore, useInsightForTarget } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
 const MAX_SUBTASKS = 4;
@@ -21,6 +22,7 @@ function TaskCardInner({ data }: NodeProps & { data: Task }) {
   const isApproved = approvalStatus === 'approved';
   const selectedNodeId = useRespecStore((s) => s.selectedNodeId);
   const isSelected = selectedNodeId === data.id;
+  const insight = useInsightForTarget(data.id);
   const { label, pillClass } = statusConfig[data.status];
   const visibleSubtasks = data.subtasks.slice(0, MAX_SUBTASKS);
   const overflow = data.subtasks.length - MAX_SUBTASKS;
@@ -58,9 +60,27 @@ function TaskCardInner({ data }: NodeProps & { data: Task }) {
         <span className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-100">
           {data.title}
         </span>
-        <span className={cn('ml-auto shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold', pillClass)}>
-          {label}
-        </span>
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {insight && !isApproved && (
+            <span
+              title={insight.message}
+              aria-label={`Agent flag: ${insight.message}`}
+              className={cn(
+                'flex items-center',
+                insight.severity === 'error' ? 'text-red-500' : 'text-amber-500',
+              )}
+            >
+              {insight.severity === 'error' ? (
+                <AlertCircle className="h-3.5 w-3.5" />
+              ) : (
+                <AlertTriangle className="h-3.5 w-3.5" />
+              )}
+            </span>
+          )}
+          <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold', pillClass)}>
+            {label}
+          </span>
+        </div>
       </div>
 
       {/* Subtasks */}

@@ -22,19 +22,23 @@ export async function POST(request: NextRequest) {
         agentName: 'DriftDetector',
         severity: 'warning',
         targetId: id,
-        message: `Requirement ${id} is not referenced by any task`,
+        message: `${id} has no task implementing it`,
+        suggestion: `Add a task that implements ${id}, or move it to a later milestone.`,
         accepted: false,
       });
     }
 
     const unlinked = findUnlinkedTasks(spec);
     for (const id of unlinked) {
+      const task = spec.tasks.find((t) => t.id === id);
+      const title = task?.title ? ` ("${task.title}")` : '';
       insights.push({
         id: crypto.randomUUID(),
         agentName: 'DriftDetector',
         severity: 'error',
         targetId: id,
-        message: `Task ${id} does not implement any requirement`,
+        message: `${id}${title} doesn't trace to any requirement`,
+        suggestion: `Link ${id} to the requirement it satisfies, or flag it as out of scope.`,
         accepted: false,
       });
     }
