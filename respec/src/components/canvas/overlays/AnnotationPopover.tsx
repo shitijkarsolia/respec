@@ -113,8 +113,9 @@ export default function AnnotationPopover() {
           exit={{ opacity: 0, y: 20 }}
           transition={{ type: "spring", stiffness: 100, damping: 20 }}
           className={cn(
-            'fixed bottom-20 right-4 z-50 w-80 rounded-lg border bg-white/80 backdrop-blur-xl border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] p-4 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]',
-            'dark:bg-zinc-900/80 dark:border-white/5'
+            'fixed z-[55] rounded-lg border bg-white/85 backdrop-blur-xl border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] p-4 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)]',
+            'inset-x-3 bottom-3 w-auto sm:inset-x-auto sm:right-4 sm:bottom-20 sm:w-80',
+            'dark:bg-zinc-900/85 dark:border-white/5'
           )}
         >
           {showSuccess ? (
