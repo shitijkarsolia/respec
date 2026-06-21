@@ -1,14 +1,37 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useRespecStore } from '@/lib/store';
 import { parseSpec } from '@/lib/spec-parser';
-import { sampleRequirements, sampleDesign, sampleTasks } from '@/data/sample-specs';
+import { demoSpecs, getDemoSpec, DEFAULT_DEMO_ID } from '@/data/sample-specs';
+import { toast } from '@/components/ui/toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Upload, Loader2 } from 'lucide-react';
+import { Sun, Moon, Upload, Loader2, ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const accentStyles: Record<
+  string,
+  { dot: string; ring: string; text: string }
+> = {
+  emerald: {
+    dot: 'bg-emerald-500',
+    ring: 'border-emerald-500 ring-2 ring-emerald-500/30',
+    text: 'text-emerald-600 dark:text-emerald-400',
+  },
+  purple: {
+    dot: 'bg-purple-500',
+    ring: 'border-purple-500 ring-2 ring-purple-500/30',
+    text: 'text-purple-600 dark:text-purple-400',
+  },
+  sky: {
+    dot: 'bg-sky-500',
+    ring: 'border-sky-500 ring-2 ring-sky-500/30',
+    text: 'text-sky-600 dark:text-sky-400',
+  },
+};
 
 export default function HomePage() {
   const router = useRouter();
@@ -17,12 +40,34 @@ export default function HomePage() {
   const [design, setDesign] = useState('');
   const [tasks, setTasks] = useState('');
   const [activeTab, setActiveTab] = useState<'upload' | 'demo'>('demo');
+  const [selectedDemoId, setSelectedDemoId] = useState(DEFAULT_DEMO_ID);
   const [dark, setDark] = useState(
-    () => typeof window !== 'undefined' && localStorage.getItem('respec-theme') === 'dark',
+    () =>
+      typeof document !== 'undefined' &&
+      document.documentElement.classList.contains('dark'),
   );
   const [dragOver, setDragOver] = useState(false);
   const [launching, setLaunching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Precompute counts for each demo's picker card.
+  const demoStats = useMemo(
+    () =>
+      Object.fromEntries(
+        demoSpecs.map((s) => {
+          const parsed = parseSpec(s.requirements, s.design, s.tasks);
+          return [
+            s.id,
+            {
+              req: parsed.requirements.length,
+              design: parsed.design.length,
+              tasks: parsed.tasks.length,
+            },
+          ];
+        }),
+      ),
+    [],
+  );
 
   const processFiles = useCallback((files: FileList | File[]) => {
     Array.from(files).forEach((file) => {
@@ -73,29 +118,24 @@ export default function HomePage() {
     setDragOver(false);
   }, []);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-  }, [dark]);
-
   const toggleDark = () => {
     const next = !dark;
     setDark(next);
-    if (next) {
-      localStorage.setItem('respec-theme', 'dark');
-    } else {
-      localStorage.setItem('respec-theme', 'light');
-    }
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('respec-theme', next ? 'dark' : 'light');
   };
 
   const handleLoadDemo = () => {
-    const spec = parseSpec(sampleRequirements, sampleDesign, sampleTasks);
+    const demo = getDemoSpec(selectedDemoId) ?? demoSpecs[0];
+    const spec = parseSpec(demo.requirements, demo.design, demo.tasks);
     setSpec(spec);
     setRawMarkdown({
-      requirements: sampleRequirements,
-      design: sampleDesign,
-      tasks: sampleTasks,
+      requirements: demo.requirements,
+      design: demo.design,
+      tasks: demo.tasks,
     });
     sessionStorage.setItem('respec-demo-mode', 'true');
+    sessionStorage.setItem('respec-demo-id', demo.id);
     sessionStorage.removeItem('respec-demo-tour-dismissed');
     setLaunching(true);
     setTimeout(() => router.push('/canvas'), 600);
@@ -104,15 +144,26 @@ export default function HomePage() {
   const handleUpload = () => {
     if (!requirements.trim() && !design.trim() && !tasks.trim()) return;
     const spec = parseSpec(requirements, design, tasks);
+    const total =
+      spec.requirements.length + spec.design.length + spec.tasks.length;
+    if (total === 0) {
+      toast.error(
+        "Couldn't parse any requirements, design, or tasks. Check the Kiro markdown format.",
+      );
+      return;
+    }
     setSpec(spec);
     setRawMarkdown({ requirements, design, tasks });
     sessionStorage.removeItem('respec-demo-mode');
+    sessionStorage.removeItem('respec-demo-id');
     setLaunching(true);
     setTimeout(() => router.push('/canvas'), 600);
   };
 
+  const selectedDemo = getDemoSpec(selectedDemoId) ?? demoSpecs[0];
+
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen p-8 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900 overflow-hidden">
+    <div className="relative flex flex-col items-center justify-center min-h-screen p-6 sm:p-8 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900 overflow-hidden">
       {/* Gradient mesh orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-emerald-300/20 dark:bg-emerald-600/10 blur-3xl animate-[float_8s_ease-in-out_infinite]" />
@@ -164,57 +215,81 @@ export default function HomePage() {
             key="demo"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="space-y-6 text-center"
+            className="space-y-5"
           >
-            <div className="rounded-lg border bg-card p-6 space-y-4 group">
-              <h2 className="text-lg font-semibold">Pomodoro Timer Spec</h2>
-              <p className="text-sm text-muted-foreground">
-                Pre-loaded with a realistic Kiro-generated spec for a Pomodoro
-                Timer app. Includes requirements, design, and tasks with
-                cross-references.
-              </p>
-              <div className="relative rounded-md bg-zinc-100 dark:bg-zinc-800/60 p-3 overflow-hidden">
-                <div className="flex gap-3 justify-center">
-                  <div className="flex flex-col gap-1.5 items-center">
-                    <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Req</span>
-                    <div className="w-16 h-6 rounded border-l-2 border-emerald-500 bg-white dark:bg-zinc-900 shadow-sm group-hover:translate-y-[-1px] transition-transform" />
-                    <div className="w-16 h-6 rounded border-l-2 border-emerald-500 bg-white dark:bg-zinc-900 shadow-sm group-hover:translate-y-[-2px] transition-transform delay-75" />
-                    <div className="w-16 h-6 rounded border-l-2 border-emerald-500 bg-white dark:bg-zinc-900 shadow-sm group-hover:translate-y-[-1px] transition-transform delay-150" />
-                  </div>
-                  <div className="flex flex-col gap-1.5 items-center">
-                    <span className="text-[9px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Design</span>
-                    <div className="w-16 h-6 rounded border-l-2 border-purple-500 bg-white dark:bg-zinc-900 shadow-sm group-hover:translate-y-[-2px] transition-transform delay-75" />
-                    <div className="w-16 h-6 rounded border-l-2 border-purple-500 bg-white dark:bg-zinc-900 shadow-sm group-hover:translate-y-[-1px] transition-transform delay-150" />
-                  </div>
-                  <div className="flex flex-col gap-1.5 items-center">
-                    <span className="text-[9px] font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">Tasks</span>
-                    <div className="w-16 h-6 rounded border-l-2 border-green-500 bg-white dark:bg-zinc-900 shadow-sm group-hover:translate-y-[-1px] transition-transform delay-150" />
-                    <div className="w-16 h-6 rounded border-l-2 border-green-500 bg-white dark:bg-zinc-900 shadow-sm group-hover:translate-y-[-2px] transition-transform delay-75" />
-                    <div className="w-16 h-6 rounded border-l-2 border-green-500 bg-white dark:bg-zinc-900 shadow-sm group-hover:translate-y-[-1px] transition-transform" />
-                  </div>
-                </div>
-                <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 group-hover:opacity-40 transition-opacity" preserveAspectRatio="none">
-                  <line x1="35%" y1="40%" x2="50%" y2="35%" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
-                  <line x1="65%" y1="45%" x2="80%" y2="50%" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
-                </svg>
+            <div className="rounded-lg border bg-card p-5 space-y-4">
+              <div className="space-y-1 text-center">
+                <h2 className="text-lg font-semibold">Pick a sample spec</h2>
+                <p className="text-sm text-muted-foreground">
+                  Realistic Kiro-generated specs with requirements, design, and
+                  tasks already cross-referenced.
+                </p>
               </div>
-              <div className="flex gap-3 justify-center text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                  Requirements
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-500" />
-                  Design Elements
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-green-500" />
-                  Tasks
-                </span>
+
+              <div
+                className="grid grid-cols-1 gap-2.5 sm:grid-cols-3"
+                role="radiogroup"
+                aria-label="Sample spec"
+              >
+                {demoSpecs.map((s) => {
+                  const stats = demoStats[s.id];
+                  const accent = accentStyles[s.accent];
+                  const isSelected = s.id === selectedDemoId;
+                  return (
+                    <button
+                      key={s.id}
+                      role="radio"
+                      aria-checked={isSelected}
+                      onClick={() => setSelectedDemoId(s.id)}
+                      onDoubleClick={handleLoadDemo}
+                      className={cn(
+                        'group flex flex-col gap-2 rounded-lg border bg-white p-3 text-left transition-all hover:shadow-md dark:bg-zinc-900',
+                        isSelected
+                          ? accent.ring
+                          : 'border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                          {s.name}
+                        </span>
+                        <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', accent.dot)} />
+                      </div>
+                      <p className="text-xs leading-snug text-muted-foreground line-clamp-2">
+                        {s.tagline}
+                      </p>
+                      {stats && (
+                        <p className="mt-auto text-[11px] font-medium text-muted-foreground/80">
+                          {stats.req} req · {stats.design} design · {stats.tasks} tasks
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-              <Button onClick={handleLoadDemo} size="lg" className="w-full active:scale-[0.97] transition-transform bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_0_20px_rgba(5,150,105,0.3)] hover:shadow-[0_0_30px_rgba(5,150,105,0.5)] animate-[glow-pulse_3s_ease-in-out_infinite]">
-                Launch Canvas with Demo Data
+
+              <Button
+                onClick={handleLoadDemo}
+                size="lg"
+                className="w-full gap-1.5 active:scale-[0.97] transition-transform bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_0_20px_rgba(5,150,105,0.3)] hover:shadow-[0_0_30px_rgba(5,150,105,0.5)] animate-[glow-pulse_3s_ease-in-out_infinite]"
+              >
+                Launch {selectedDemo.name}
+                <ArrowRight className="h-4 w-4" />
               </Button>
+            </div>
+            <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                Requirements
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-purple-500" />
+                Design
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500" />
+                Tasks
+              </span>
             </div>
           </motion.div>
         ) : (
