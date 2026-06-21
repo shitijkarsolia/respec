@@ -31,10 +31,12 @@ function CrossLinkEdge({
 }: EdgeProps) {
   const hoveredNodeId = useRespecStore((s) => s.hoveredNodeId);
   const selectedNodeId = useRespecStore((s) => s.selectedNodeId);
-  // Hover takes priority over selection for the focus target.
-  const focusId = hoveredNodeId ?? selectedNodeId;
-  const isActive = focusId != null && (focusId === source || focusId === target);
-  const isDimmed = focusId != null && !isActive;
+  // Hover is the exploratory mode (brighten this, dim the rest); selection just
+  // brightens its own links so context stays intact while annotating.
+  const hoverActive = hoveredNodeId != null && (hoveredNodeId === source || hoveredNodeId === target);
+  const selectActive = selectedNodeId != null && (selectedNodeId === source || selectedNodeId === target);
+  const isActive = hoverActive || selectActive;
+  const isDimmed = hoveredNodeId != null && !hoverActive;
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,

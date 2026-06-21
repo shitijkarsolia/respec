@@ -202,16 +202,16 @@ export const usePendingInsightCount = () =>
  * is it the focus, is it linked to the focus, or should it dim away?
  */
 export const useNodeFocusState = (id: string) => {
+  // Hover-only: clicking a card to annotate should keep the rest of the canvas
+  // legible, while hovering is the exploratory "trace the path" mode.
   const hoveredNodeId = useRespecStore((s) => s.hoveredNodeId);
-  const selectedNodeId = useRespecStore((s) => s.selectedNodeId);
   const adjacency = useRespecStore((s) => s.adjacency);
-  const focusId = hoveredNodeId ?? selectedNodeId;
   return useMemo(() => {
-    if (!focusId) return { isFocus: false, isLinked: false, isDimmed: false };
-    if (focusId === id) return { isFocus: true, isLinked: true, isDimmed: false };
-    const isLinked = adjacency[focusId]?.includes(id) ?? false;
+    if (!hoveredNodeId) return { isFocus: false, isLinked: false, isDimmed: false };
+    if (hoveredNodeId === id) return { isFocus: true, isLinked: true, isDimmed: false };
+    const isLinked = adjacency[hoveredNodeId]?.includes(id) ?? false;
     return { isFocus: false, isLinked, isDimmed: !isLinked };
-  }, [focusId, id, adjacency]);
+  }, [hoveredNodeId, id, adjacency]);
 };
 
 /** The highest-priority pending insight that targets a specific node, if any. */
