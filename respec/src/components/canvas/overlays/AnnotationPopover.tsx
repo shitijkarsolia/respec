@@ -119,6 +119,8 @@ export default function AnnotationPopover() {
             'dark:bg-zinc-900/85 dark:border-white/5'
           )}
         >
+          {/* Grab handle (mobile bottom sheet) */}
+          <div className="mx-auto mb-2.5 h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600 sm:hidden" />
           {showSuccess ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
