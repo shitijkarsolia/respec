@@ -7,6 +7,7 @@ import { useRespecStore, useAnnotationCount } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import FeedbackModal from './FeedbackModal';
+import { toast } from '@/components/ui/toast';
 import { Archive, Check, Home } from 'lucide-react';
 
 type ConfettiPiece = {
@@ -78,9 +79,11 @@ export default function ApprovalBar() {
       if (res.ok) {
         const data = await res.json();
         setFeedbackText(data.feedback ?? 'Feedback compiled.');
+      } else {
+        toast.error('Could not compile feedback. Please try again.');
       }
     } catch {
-      // non-blocking for demo
+      toast.error('Could not compile feedback. Please try again.');
     } finally {
       setLoading(false);
     }

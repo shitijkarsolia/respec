@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import type {
   ParsedSpec,
@@ -29,6 +30,12 @@ interface RespecState {
   // Actions
   setSpec: (spec: ParsedSpec) => void;
   setRawMarkdown: (raw: { requirements: string; design: string; tasks: string }) => void;
+  loadReview: (data: {
+    spec: ParsedSpec;
+    rawMarkdown: { requirements: string; design: string; tasks: string };
+    annotations: Record<string, Annotation[]>;
+    approvalStatus: ApprovalStatus;
+  }) => void;
   addAnnotation: (annotation: Annotation) => void;
   removeAnnotation: (targetId: string, annotationId: string) => void;
   clearAnnotations: () => void;
@@ -66,6 +73,9 @@ export const useRespecStore = create<RespecState>((set) => ({
   setSpec: (spec) => set({ spec }),
 
   setRawMarkdown: (raw) => set({ rawMarkdown: raw }),
+
+  loadReview: ({ spec, rawMarkdown, annotations, approvalStatus }) =>
+    set({ spec, rawMarkdown, annotations, approvalStatus, selectedNodeId: null }),
 
   addAnnotation: (annotation) =>
     set((state) => {
@@ -180,3 +190,17 @@ export const usePendingInsightCount = () =>
   useRespecStore((state) =>
     state.insights.filter((i) => !i.accepted).length
   );
+
+/** The highest-priority pending insight that targets a specific node, if any. */
+export const useInsightForTarget = (targetId: string): AgentInsight | null => {
+  const insights = useRespecStore((state) => state.insights);
+  return useMemo(() => {
+    const matches = insights.filter(
+      (i) => !i.accepted && i.targetId === targetId,
+    );
+    if (matches.length === 0) return null;
+    // Prefer errors over warnings over info.
+    const rank = { error: 0, warning: 1, info: 2 } as const;
+    return [...matches].sort((a, b) => rank[a.severity] - rank[b.severity])[0];
+  }, [insights, targetId]);
+};

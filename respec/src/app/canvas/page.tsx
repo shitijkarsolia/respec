@@ -15,7 +15,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useRespecStore } from '@/lib/store';
 import { computeCrossLinks } from '@/lib/cross-linker';
 import { parseSpec } from '@/lib/spec-parser';
-import { sampleRequirements, sampleDesign, sampleTasks } from '@/data/sample-specs';
+import { demoSpecs, getDemoSpec, DEFAULT_DEMO_ID } from '@/data/sample-specs';
+import { readShareFromHash, clearShareHash } from '@/lib/share';
 import { nodeTypes } from '@/components/canvas/nodes';
 import { edgeTypes } from '@/components/canvas/edges';
 import ApprovalBar from '@/components/canvas/overlays/ApprovalBar';
@@ -101,6 +102,7 @@ export default function CanvasPage() {
   const spec = useRespecStore((s) => s.spec);
   const setSpec = useRespecStore((s) => s.setSpec);
   const setRawMarkdown = useRespecStore((s) => s.setRawMarkdown);
+  const loadReview = useRespecStore((s) => s.loadReview);
   const setHoveredNodeId = useRespecStore((s) => s.setHoveredNodeId);
   const setSelectedNodeId = useRespecStore((s) => s.setSelectedNodeId);
   const addInsight = useRespecStore((s) => s.addInsight);
@@ -110,25 +112,69 @@ export default function CanvasPage() {
   const agentsRanRef = useRef(false);
   const [visibleCount, setVisibleCount] = useState(0);
 
-  // Auto-load demo data
+  // Resolve which spec to show: shared review link > in-store spec > selected/default demo.
   useEffect(() => {
-    if (!spec && !loaded.current) {
-      loaded.current = true;
-      const parsed = parseSpec(sampleRequirements, sampleDesign, sampleTasks);
-      setSpec(parsed);
-      setRawMarkdown({
-        requirements: sampleRequirements,
-        design: sampleDesign,
-        tasks: sampleTasks,
-      });
-      sessionStorage.setItem('respec-demo-mode', 'true');
-      sessionStorage.removeItem('respec-demo-tour-dismissed');
-    }
-  }, [spec, setSpec, setRawMarkdown]);
+    if (loaded.current) return;
+    loaded.current = true;
 
+    // 1) A shared review link rehydrates the exact annotated state.
+    const shared = readShareFromHash();
+    if (shared) {
+      const demo = shared.demoId ? getDemoSpec(shared.demoId) : undefined;
+      const raw =
+        shared.raw ??
+        (demo
+          ? { requirements: demo.requirements, design: demo.design, tasks: demo.tasks }
+          : null);
+      if (raw) {
+        loadReview({
+          spec: parseSpec(raw.requirements, raw.design, raw.tasks),
+          rawMarkdown: raw,
+          annotations: shared.annotations,
+          approvalStatus: shared.approvalStatus,
+        });
+        // Shared snapshots aren't demo mode — no scripted tour.
+        sessionStorage.removeItem('respec-demo-mode');
+        if (shared.demoId) sessionStorage.setItem('respec-demo-id', shared.demoId);
+        clearShareHash();
+        return;
+      }
+    }
+
+    // 2) Spec already loaded (launched from the home page).
+    if (spec) return;
+
+    // 3) Fall back to the selected demo, or the default.
+    const demoId =
+      (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('respec-demo-id')) ||
+      DEFAULT_DEMO_ID;
+    const demo = getDemoSpec(demoId) ?? demoSpecs[0];
+    setSpec(parseSpec(demo.requirements, demo.design, demo.tasks));
+    setRawMarkdown({
+      requirements: demo.requirements,
+      design: demo.design,
+      tasks: demo.tasks,
+    });
+    sessionStorage.setItem('respec-demo-mode', 'true');
+    sessionStorage.setItem('respec-demo-id', demo.id);
+    sessionStorage.removeItem('respec-demo-tour-dismissed');
+  }, [spec, setSpec, setRawMarkdown, loadReview]);
+
+  const insights = useRespecStore((s) => s.insights);
   const allNodes = useMemo(() => (spec ? buildNodes(spec) : []), [spec]);
   const crossLinks = useMemo(() => (spec ? computeCrossLinks(spec) : []), [spec]);
   const allEdges = useMemo(() => buildEdges(crossLinks), [crossLinks]);
+
+  // Node ids the agents have flagged (used to highlight them on the minimap).
+  const flaggedIds = useMemo(
+    () =>
+      new Set(
+        insights
+          .filter((i) => !i.accepted && i.targetId)
+          .map((i) => i.targetId as string),
+      ),
+    [insights],
+  );
 
   // Streaming animation: reveal nodes one-by-one
   useEffect(() => {
@@ -342,6 +388,7 @@ export default function CanvasPage() {
           <Controls />
           <MiniMap
             nodeColor={(node) => {
+              if (flaggedIds.has(node.id)) return '#f59e0b';
               if (node.type === 'ears') return '#059669';
               if (node.type === 'design') return '#a855f7';
               if (node.type === 'task') return '#22c55e';

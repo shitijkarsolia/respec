@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Download } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
 
 interface FeedbackModalProps {
   feedback: string;
@@ -68,11 +69,26 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
     try {
       await navigator.clipboard.writeText(feedback);
       setCopied(true);
+      toast.success('Feedback copied to clipboard');
       if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
       copiedTimerRef.current = setTimeout(() => setCopied(false), 1500);
     } catch {
       // Clipboard write failed (e.g., missing permissions or insecure context)
+      toast.error('Could not copy — your browser blocked clipboard access');
     }
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([feedback], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'respec-feedback.md';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success('Downloaded respec-feedback.md');
   };
 
   return (
@@ -107,6 +123,15 @@ export default function FeedbackModal({ feedback, onClose }: FeedbackModalProps)
             </div>
 
             <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                className="active:scale-[0.97] transition-all gap-1.5"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
