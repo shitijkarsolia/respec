@@ -7,8 +7,10 @@ import { useRespecStore, useAnnotationCount } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import FeedbackModal from './FeedbackModal';
+import HandoffModal from './HandoffModal';
+import { getDemoSpec } from '@/data/sample-specs';
 import { toast } from '@/components/ui/toast';
-import { Archive, Check, Home } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 type ConfettiPiece = {
   id: number;
@@ -38,11 +40,13 @@ export default function ApprovalBar() {
   const [feedbackText, setFeedbackText] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [confettiPieces, setConfettiPieces] = useState<ConfettiPiece[]>([]);
+  const [handoffDismissed, setHandoffDismissed] = useState(false);
 
   const spec = useRespecStore((s) => s.spec);
 
   const handleApproveClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     approve();
+    setHandoffDismissed(false);
     const rect = e.currentTarget.getBoundingClientRect();
     const originX = rect.left + rect.width / 2;
     const originY = rect.top + rect.height / 2;
@@ -191,40 +195,16 @@ export default function ApprovalBar() {
       )}
 
       <AnimatePresence>
-        {approvalStatus === 'approved' && (
-          <motion.div
-            data-tour="completion-card"
-            initial={{ opacity: 0, y: 16, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.98 }}
-            className="fixed bottom-20 left-4 right-4 z-40 mx-auto max-w-xl rounded-lg border border-emerald-200 bg-white/95 p-4 shadow-2xl shadow-emerald-950/10 backdrop-blur-xl dark:border-emerald-900/70 dark:bg-zinc-950/95"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="mt-0.5 rounded-full bg-emerald-100 p-2 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                  <Archive className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                    Review complete
-                  </p>
-                  <p className="mt-1 text-sm leading-5 text-zinc-600 dark:text-zinc-300">
-                    Spec approved and ready for handoff.
-                  </p>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleReturnHome}
-                className="w-full gap-1.5 sm:w-auto"
-              >
-                <Home className="h-3.5 w-3.5" />
-                Back to start
-              </Button>
-            </div>
-          </motion.div>
+        {approvalStatus === 'approved' && !handoffDismissed && (
+          <HandoffModal
+            specName={
+              getDemoSpec(
+                (typeof window !== 'undefined' && sessionStorage.getItem('respec-demo-id')) || '',
+              )?.name ?? 'Spec'
+            }
+            onClose={() => setHandoffDismissed(true)}
+            onReviewAnother={handleReturnHome}
+          />
         )}
       </AnimatePresence>
 
