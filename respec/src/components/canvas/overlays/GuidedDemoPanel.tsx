@@ -11,10 +11,9 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAnnotationCount, useRespecStore } from '@/lib/store';
+import { findUnlinkedTasks } from '@/lib/cross-linker';
 import type { Annotation } from '@/lib/types';
 import { cn } from '@/lib/utils';
-
-const DEMO_ANNOTATION_ID = 'demo-annotation-task-t8';
 
 type WalkthroughStep = {
   id: string;
@@ -74,26 +73,38 @@ export default function GuidedDemoPanel() {
   const setSelectedNodeId = useRespecStore((s) => s.setSelectedNodeId);
   const annotationCount = useAnnotationCount();
 
-  const hasSampleTask = spec?.tasks.some((task) => task.id === 'T-8') ?? false;
+  // The gap task is whichever task the demo leaves unlinked (Pomodoro T-8,
+  // URL Shortener T-6, Realtime Chat T-7) — found generically, not hard-coded.
+  const gapTaskId = useMemo(() => (spec ? findUnlinkedTasks(spec)[0] ?? null : null), [spec]);
+  const gapTask = useMemo(
+    () => spec?.tasks.find((t) => t.id === gapTaskId) ?? null,
+    [spec, gapTaskId],
+  );
+  const demoAnnotationId = gapTaskId ? `demo-annotation-${gapTaskId}` : 'demo-annotation';
   const hasDemoAnnotation = Object.values(annotations).some((list) =>
-    list.some((annotation) => annotation.id === DEMO_ANNOTATION_ID),
+    list.some((annotation) => annotation.id === demoAnnotationId),
   );
 
+  const reqCount = spec?.requirements.length ?? 0;
+  const designCount = spec?.design.length ?? 0;
+  const taskCount = spec?.tasks.length ?? 0;
+
   const addSampleAnnotation = useCallback(() => {
+    if (!gapTaskId) return;
     if (!hasDemoAnnotation) {
       const annotation: Annotation = {
-        id: DEMO_ANNOTATION_ID,
-        targetId: 'T-8',
+        id: demoAnnotationId,
+        targetId: gapTaskId,
         targetType: 'task',
         action: 'clarify',
-        content: 'Clarify whether streak badges should map to a requirement or move to future scope.',
+        content: `Clarify whether "${gapTask?.title ?? gapTaskId}" maps to a requirement or belongs in a future milestone.`,
         author: 'reviewer',
         timestamp: Date.now(),
       };
       addAnnotation(annotation);
     }
-    setSelectedNodeId('T-8');
-  }, [addAnnotation, hasDemoAnnotation, setSelectedNodeId]);
+    setSelectedNodeId(gapTaskId);
+  }, [addAnnotation, hasDemoAnnotation, setSelectedNodeId, gapTaskId, gapTask, demoAnnotationId]);
 
   const steps = [
     { label: 'Annotate', done: annotationCount > 0 },
@@ -106,7 +117,7 @@ export default function GuidedDemoPanel() {
       {
         id: 'overview',
         title: 'Start with the map',
-        body: 'This canvas turns raw Kiro markdown into a review surface. The top bar confirms the demo loaded 12 requirements, 1 design element, and 8 tasks.',
+        body: `This canvas turns raw Kiro markdown into a review surface. The top bar confirms the demo loaded ${reqCount} requirements, ${designCount} design element${designCount === 1 ? '' : 's'}, and ${taskCount} tasks.`,
         target: 'status-summary',
         primaryLabel: 'Show columns',
         action: 'next',
@@ -122,7 +133,7 @@ export default function GuidedDemoPanel() {
       {
         id: 'agents',
         title: 'Notice the review agents',
-        body: 'The rail flags gaps while the reviewer stays in context. In this demo, DriftDetector spots that T-8 is not linked to a requirement.',
+        body: `The rail flags gaps while the reviewer stays in context. In this demo, DriftDetector spots that ${gapTaskId ?? 'a task'} is not linked to a requirement.`,
         target: 'agent-rail',
         primaryLabel: 'Start review loop',
         action: 'next',
@@ -130,9 +141,9 @@ export default function GuidedDemoPanel() {
       {
         id: 'annotate',
         title: 'Add a sample annotation',
-        body: 'Click Annotate to mark T-8 with a clarify note. This simulates a reviewer asking whether streak badges belong in scope.',
+        body: `Click Annotate to mark ${gapTaskId ?? 'the unlinked task'} with a clarify note — a reviewer asking whether it really belongs in scope.`,
         target: 'demo-annotate',
-        primaryLabel: 'Annotate T-8',
+        primaryLabel: `Annotate ${gapTaskId ?? 'task'}`,
         action: 'annotate',
       },
       {
@@ -163,14 +174,14 @@ export default function GuidedDemoPanel() {
       },
       {
         id: 'done',
-        title: 'That is the full loop',
-        body: 'The demo shows the core product story: visualize a spec, find gaps, annotate the issue, compile feedback, and approve the result.',
-        target: 'approval-bar',
+        title: 'Hand it off',
+        body: 'Approved. Respec packages the review into a handoff artifact you can copy into Kiro, download, or share — closing the loop: visualize, find gaps, annotate, compile, approve, hand off.',
+        target: 'handoff',
         primaryLabel: 'Finish',
         action: 'finish',
       },
     ],
-    [],
+    [reqCount, designCount, taskCount, gapTaskId],
   );
 
   const currentStep = walkthroughSteps[Math.min(stepIndex, walkthroughSteps.length - 1)];
@@ -219,7 +230,7 @@ export default function GuidedDemoPanel() {
     return () => window.removeEventListener('respec-feedback-closed', handleFeedbackClosed);
   }, [currentStep?.id, tourOpen]);
 
-  if (!isDemoMode || !spec || !hasSampleTask) return null;
+  if (!isDemoMode || !spec || !gapTaskId) return null;
 
   const closeTour = () => {
     setTourOpen(false);
