@@ -7,17 +7,23 @@ import { useRespecStore, useAnnotationCount } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import FeedbackModal from './FeedbackModal';
-import { Archive, Check, Home } from 'lucide-react';
+import HandoffModal from './HandoffModal';
+import { getDemoSpec } from '@/data/sample-specs';
+import { toast } from '@/components/ui/toast';
+import { Check } from 'lucide-react';
 
 type ConfettiPiece = {
   id: number;
   colorIndex: number;
+  shape: 'circle' | 'rect';
   originX: number;
   originY: number;
   x: number;
-  y: number;
+  peakY: number;
+  fallY: number;
   scale: number;
   rotate: number;
+  delay: number;
   duration: number;
 };
 
@@ -34,27 +40,33 @@ export default function ApprovalBar() {
   const [feedbackText, setFeedbackText] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [confettiPieces, setConfettiPieces] = useState<ConfettiPiece[]>([]);
+  const [handoffDismissed, setHandoffDismissed] = useState(false);
 
   const spec = useRespecStore((s) => s.spec);
 
-  const handleApproveClick = useCallback(() => {
+  const handleApproveClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     approve();
-    const originX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500;
-    const originY = typeof window !== 'undefined' ? window.innerHeight - 60 : 500;
+    setHandoffDismissed(false);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const originX = rect.left + rect.width / 2;
+    const originY = rect.top + rect.height / 2;
     setConfettiPieces(
-      Array.from({ length: 24 }, (_, i) => ({
+      Array.from({ length: 40 }, (_, i) => ({
         id: i,
         colorIndex: i % 5,
+        shape: i % 3 === 0 ? 'rect' : 'circle',
         originX,
         originY,
-        x: originX + (Math.random() - 0.5) * 600,
-        y: originY - Math.random() * 400 - 100,
-        scale: Math.random() * 0.8 + 0.4,
+        x: originX + (Math.random() - 0.5) * 520,
+        peakY: originY - (150 + Math.random() * 220),
+        fallY: originY + (40 + Math.random() * 240),
+        scale: 0.5 + Math.random() * 0.7,
         rotate: Math.random() * 720 - 360,
-        duration: 1 + Math.random() * 0.5,
+        delay: Math.random() * 0.12,
+        duration: 1.1 + Math.random() * 0.6,
       })),
     );
-    setTimeout(() => setConfettiPieces([]), 1500);
+    setTimeout(() => setConfettiPieces([]), 2000);
   }, [approve]);
 
   const handleReturnHome = useCallback(() => {
@@ -78,9 +90,11 @@ export default function ApprovalBar() {
       if (res.ok) {
         const data = await res.json();
         setFeedbackText(data.feedback ?? 'Feedback compiled.');
+      } else {
+        toast.error('Could not compile feedback. Please try again.');
       }
     } catch {
-      // non-blocking for demo
+      toast.error('Could not compile feedback. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -181,40 +195,16 @@ export default function ApprovalBar() {
       )}
 
       <AnimatePresence>
-        {approvalStatus === 'approved' && (
-          <motion.div
-            data-tour="completion-card"
-            initial={{ opacity: 0, y: 16, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.98 }}
-            className="fixed bottom-20 left-4 right-4 z-40 mx-auto max-w-xl rounded-lg border border-emerald-200 bg-white/95 p-4 shadow-2xl shadow-emerald-950/10 backdrop-blur-xl dark:border-emerald-900/70 dark:bg-zinc-950/95"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="mt-0.5 rounded-full bg-emerald-100 p-2 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                  <Archive className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                    Review complete
-                  </p>
-                  <p className="mt-1 text-sm leading-5 text-zinc-600 dark:text-zinc-300">
-                    Spec approved and ready for handoff.
-                  </p>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleReturnHome}
-                className="w-full gap-1.5 sm:w-auto"
-              >
-                <Home className="h-3.5 w-3.5" />
-                Back to start
-              </Button>
-            </div>
-          </motion.div>
+        {approvalStatus === 'approved' && !handoffDismissed && (
+          <HandoffModal
+            specName={
+              getDemoSpec(
+                (typeof window !== 'undefined' && sessionStorage.getItem('respec-demo-id')) || '',
+              )?.name ?? 'Spec'
+            }
+            onClose={() => setHandoffDismissed(true)}
+            onReviewAnother={handleReturnHome}
+          />
         )}
       </AnimatePresence>
 
@@ -223,24 +213,20 @@ export default function ApprovalBar() {
           {confettiPieces.map((piece) => (
             <motion.div
               key={piece.id}
-              initial={{
-                x: piece.originX,
-                y: piece.originY,
-                scale: 0,
-                opacity: 1,
-              }}
+              initial={{ x: piece.originX, y: piece.originY, scale: 0, opacity: 1, rotate: 0 }}
               animate={{
                 x: piece.x,
-                y: piece.y,
-                scale: piece.scale,
-                opacity: 0,
+                y: [piece.originY, piece.peakY, piece.fallY],
+                scale: [0, piece.scale, piece.scale],
+                opacity: [1, 1, 0],
                 rotate: piece.rotate,
               }}
-              transition={{ duration: piece.duration, ease: 'easeOut' }}
-              className={[
-                'absolute h-2 w-2 rounded-full',
+              transition={{ duration: piece.duration, delay: piece.delay, ease: 'easeOut', times: [0, 0.35, 1] }}
+              className={cn(
+                'absolute',
+                piece.shape === 'rect' ? 'h-2.5 w-1.5 rounded-[1px]' : 'h-2 w-2 rounded-full',
                 ['bg-emerald-500', 'bg-purple-500', 'bg-amber-500', 'bg-green-400', 'bg-rose-400'][piece.colorIndex],
-              ].join(' ')}
+              )}
             />
           ))}
         </div>

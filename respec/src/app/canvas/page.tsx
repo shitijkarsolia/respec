@@ -15,7 +15,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useRespecStore } from '@/lib/store';
 import { computeCrossLinks } from '@/lib/cross-linker';
 import { parseSpec } from '@/lib/spec-parser';
-import { sampleRequirements, sampleDesign, sampleTasks } from '@/data/sample-specs';
+import { demoSpecs, getDemoSpec, DEFAULT_DEMO_ID } from '@/data/sample-specs';
+import { readShareFromHash, clearShareHash } from '@/lib/share';
 import { nodeTypes } from '@/components/canvas/nodes';
 import { edgeTypes } from '@/components/canvas/edges';
 import ApprovalBar from '@/components/canvas/overlays/ApprovalBar';
@@ -101,7 +102,9 @@ export default function CanvasPage() {
   const spec = useRespecStore((s) => s.spec);
   const setSpec = useRespecStore((s) => s.setSpec);
   const setRawMarkdown = useRespecStore((s) => s.setRawMarkdown);
+  const loadReview = useRespecStore((s) => s.loadReview);
   const setHoveredNodeId = useRespecStore((s) => s.setHoveredNodeId);
+  const setAdjacency = useRespecStore((s) => s.setAdjacency);
   const setSelectedNodeId = useRespecStore((s) => s.setSelectedNodeId);
   const addInsight = useRespecStore((s) => s.addInsight);
   const addAgentLog = useRespecStore((s) => s.addAgentLog);
@@ -110,25 +113,79 @@ export default function CanvasPage() {
   const agentsRanRef = useRef(false);
   const [visibleCount, setVisibleCount] = useState(0);
 
-  // Auto-load demo data
+  // Resolve which spec to show: shared review link > in-store spec > selected/default demo.
   useEffect(() => {
-    if (!spec && !loaded.current) {
-      loaded.current = true;
-      const parsed = parseSpec(sampleRequirements, sampleDesign, sampleTasks);
-      setSpec(parsed);
-      setRawMarkdown({
-        requirements: sampleRequirements,
-        design: sampleDesign,
-        tasks: sampleTasks,
-      });
-      sessionStorage.setItem('respec-demo-mode', 'true');
-      sessionStorage.removeItem('respec-demo-tour-dismissed');
-    }
-  }, [spec, setSpec, setRawMarkdown]);
+    if (loaded.current) return;
+    loaded.current = true;
 
+    // 1) A shared review link rehydrates the exact annotated state.
+    const shared = readShareFromHash();
+    if (shared) {
+      const demo = shared.demoId ? getDemoSpec(shared.demoId) : undefined;
+      const raw =
+        shared.raw ??
+        (demo
+          ? { requirements: demo.requirements, design: demo.design, tasks: demo.tasks }
+          : null);
+      if (raw) {
+        loadReview({
+          spec: parseSpec(raw.requirements, raw.design, raw.tasks),
+          rawMarkdown: raw,
+          annotations: shared.annotations,
+          approvalStatus: shared.approvalStatus,
+        });
+        // Shared snapshots aren't demo mode — no scripted tour.
+        sessionStorage.removeItem('respec-demo-mode');
+        if (shared.demoId) sessionStorage.setItem('respec-demo-id', shared.demoId);
+        clearShareHash();
+        return;
+      }
+    }
+
+    // 2) Spec already loaded (launched from the home page).
+    if (spec) return;
+
+    // 3) Fall back to the selected demo, or the default.
+    const demoId =
+      (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('respec-demo-id')) ||
+      DEFAULT_DEMO_ID;
+    const demo = getDemoSpec(demoId) ?? demoSpecs[0];
+    setSpec(parseSpec(demo.requirements, demo.design, demo.tasks));
+    setRawMarkdown({
+      requirements: demo.requirements,
+      design: demo.design,
+      tasks: demo.tasks,
+    });
+    sessionStorage.setItem('respec-demo-mode', 'true');
+    sessionStorage.setItem('respec-demo-id', demo.id);
+    sessionStorage.removeItem('respec-demo-tour-dismissed');
+  }, [spec, setSpec, setRawMarkdown, loadReview]);
+
+  const insights = useRespecStore((s) => s.insights);
   const allNodes = useMemo(() => (spec ? buildNodes(spec) : []), [spec]);
   const crossLinks = useMemo(() => (spec ? computeCrossLinks(spec) : []), [spec]);
   const allEdges = useMemo(() => buildEdges(crossLinks), [crossLinks]);
+
+  // Build an adjacency map so cards can spotlight their connected subgraph.
+  useEffect(() => {
+    const adj: Record<string, string[]> = {};
+    for (const link of crossLinks) {
+      (adj[link.sourceId] ??= []).push(link.targetId);
+      (adj[link.targetId] ??= []).push(link.sourceId);
+    }
+    setAdjacency(adj);
+  }, [crossLinks, setAdjacency]);
+
+  // Node ids the agents have flagged (used to highlight them on the minimap).
+  const flaggedIds = useMemo(
+    () =>
+      new Set(
+        insights
+          .filter((i) => !i.accepted && i.targetId)
+          .map((i) => i.targetId as string),
+      ),
+    [insights],
+  );
 
   // Streaming animation: reveal nodes one-by-one
   useEffect(() => {
@@ -322,8 +379,12 @@ export default function CanvasPage() {
       <div className="flex-1 flex min-h-0">
       <div
         data-tour="canvas-stage"
-        className="flex-1 relative bg-gradient-to-br from-zinc-50/50 via-transparent to-emerald-50/20 dark:from-zinc-950/50 dark:via-transparent dark:to-emerald-950/10"
+        className="flex-1 relative bg-zinc-50/60 dark:bg-zinc-950"
       >
+        {/* Ambient lane wash: emerald → purple → green, left to right */}
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(16,185,129,0.07),transparent_32%,rgba(168,85,247,0.05)_50%,transparent_68%,rgba(34,197,94,0.07))] dark:bg-[linear-gradient(90deg,rgba(16,185,129,0.10),transparent_32%,rgba(168,85,247,0.08)_50%,transparent_68%,rgba(34,197,94,0.10))]" />
+        {/* Soft center lift / vignette to focus the eye inward */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_35%,rgba(255,255,255,0.55),transparent_70%)] dark:bg-[radial-gradient(70%_55%_at_50%_30%,rgba(255,255,255,0.04),transparent_65%)]" />
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -338,10 +399,11 @@ export default function CanvasPage() {
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={24} size={0.8} color="rgba(161,161,170,0.3)" />
+          <Background variant={BackgroundVariant.Dots} gap={26} size={1} color="rgba(148,163,184,0.22)" />
           <Controls />
           <MiniMap
             nodeColor={(node) => {
+              if (flaggedIds.has(node.id)) return '#f59e0b';
               if (node.type === 'ears') return '#059669';
               if (node.type === 'design') return '#a855f7';
               if (node.type === 'task') return '#22c55e';

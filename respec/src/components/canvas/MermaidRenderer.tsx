@@ -6,6 +6,8 @@ import mermaid from 'mermaid';
 interface MermaidRendererProps {
   code: string;
   id?: string;
+  /** Accessible description of the diagram for assistive tech. */
+  label?: string;
 }
 
 function initMermaid(dark: boolean) {
@@ -31,7 +33,7 @@ function initMermaid(dark: boolean) {
   });
 }
 
-export function MermaidRenderer({ code, id }: MermaidRendererProps) {
+export function MermaidRenderer({ code, id, label }: MermaidRendererProps) {
   const reactId = useId();
   const mermaidId = `mermaid-${id ?? reactId}`.replace(/:/g, '-');
   const [svg, setSvg] = useState<string | null>(null);
@@ -84,7 +86,10 @@ export function MermaidRenderer({ code, id }: MermaidRendererProps) {
 
   if (error) {
     return (
-      <div className="rounded-md border border-dashed border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 text-xs text-red-600 dark:text-red-400">
+      <div
+        role="status"
+        className="rounded-md border border-dashed border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 text-xs text-red-600 dark:text-red-400"
+      >
         Diagram render failed
       </div>
     );
@@ -92,7 +97,11 @@ export function MermaidRenderer({ code, id }: MermaidRendererProps) {
 
   if (!svg) {
     return (
-      <div className="flex items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 p-3 h-[80px]">
+      <div
+        role="status"
+        aria-label="Rendering diagram"
+        className="flex items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 p-3 h-[80px]"
+      >
         <div className="flex flex-col items-center gap-1.5">
           <div className="h-3 w-24 rounded bg-zinc-200 dark:bg-zinc-700 animate-pulse" />
           <div className="h-3 w-16 rounded bg-zinc-200 dark:bg-zinc-700 animate-pulse" />
@@ -103,6 +112,8 @@ export function MermaidRenderer({ code, id }: MermaidRendererProps) {
 
   return (
     <div
+      role="img"
+      aria-label={label ? `Diagram: ${label}` : 'Design diagram'}
       className="max-h-[200px] overflow-auto rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 p-1"
       dangerouslySetInnerHTML={{ __html: svg }}
     />

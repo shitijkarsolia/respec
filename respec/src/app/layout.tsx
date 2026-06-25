@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,10 +13,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://respec-ai.vercel.app";
+const TITLE = "Respec — Visual Spec Review for Kiro";
+const DESCRIPTION =
+  "Turn Kiro specs into an interactive canvas. See coverage, flag issues, compile feedback, and approve — all in one review surface.";
+
 export const metadata: Metadata = {
-  title: "Respec — Visual Spec Review for Kiro",
-  description:
-    "Turn Kiro specs into interactive canvases. Annotate, validate, approve.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  applicationName: "Respec",
+  authors: [{ name: "Respec" }],
+  keywords: [
+    "Kiro",
+    "spec-driven development",
+    "requirements",
+    "design review",
+    "EARS",
+    "annotation",
+  ],
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "Respec",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
   icons: {
     icon: [
       {
@@ -25,6 +53,9 @@ export const metadata: Metadata = {
     ],
   },
 };
+
+// Apply the saved theme before paint to avoid a light/dark flash on load.
+const themeScript = `(function(){try{var t=localStorage.getItem('respec-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -37,7 +68,13 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

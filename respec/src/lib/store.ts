@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import type {
   ParsedSpec,
@@ -19,6 +20,9 @@ interface RespecState {
   agentActivity: AgentLogEntry[];
   insights: AgentInsight[];
 
+  // Graph adjacency (node id -> ids it links to/from) for focus highlighting
+  adjacency: Record<string, string[]>;
+
   // UI state
   approvalStatus: ApprovalStatus;
   railOpen: boolean;
@@ -29,6 +33,12 @@ interface RespecState {
   // Actions
   setSpec: (spec: ParsedSpec) => void;
   setRawMarkdown: (raw: { requirements: string; design: string; tasks: string }) => void;
+  loadReview: (data: {
+    spec: ParsedSpec;
+    rawMarkdown: { requirements: string; design: string; tasks: string };
+    annotations: Record<string, Annotation[]>;
+    approvalStatus: ApprovalStatus;
+  }) => void;
   addAnnotation: (annotation: Annotation) => void;
   removeAnnotation: (targetId: string, annotationId: string) => void;
   clearAnnotations: () => void;
@@ -42,6 +52,7 @@ interface RespecState {
   setHoveredNodeId: (id: string | null) => void;
   setSelectedNodeId: (id: string | null) => void;
   setIsStreaming: (streaming: boolean) => void;
+  setAdjacency: (adjacency: Record<string, string[]>) => void;
   approve: () => void;
   requestChanges: () => void;
   reset: () => void;
@@ -53,6 +64,7 @@ const initialState = {
   annotations: {} as Record<string, Annotation[]>,
   agentActivity: [] as AgentLogEntry[],
   insights: [] as AgentInsight[],
+  adjacency: {} as Record<string, string[]>,
   approvalStatus: 'pending' as ApprovalStatus,
   railOpen: true,
   hoveredNodeId: null as string | null,
@@ -66,6 +78,9 @@ export const useRespecStore = create<RespecState>((set) => ({
   setSpec: (spec) => set({ spec }),
 
   setRawMarkdown: (raw) => set({ rawMarkdown: raw }),
+
+  loadReview: ({ spec, rawMarkdown, annotations, approvalStatus }) =>
+    set({ spec, rawMarkdown, annotations, approvalStatus, selectedNodeId: null }),
 
   addAnnotation: (annotation) =>
     set((state) => {
@@ -149,6 +164,7 @@ export const useRespecStore = create<RespecState>((set) => ({
   setHoveredNodeId: (id) => set({ hoveredNodeId: id }),
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
   setIsStreaming: (streaming) => set({ isStreaming: streaming }),
+  setAdjacency: (adjacency) => set({ adjacency }),
 
   approve: () => {
     set({
@@ -180,3 +196,34 @@ export const usePendingInsightCount = () =>
   useRespecStore((state) =>
     state.insights.filter((i) => !i.accepted).length
   );
+
+/**
+ * Focus state for a node relative to the currently hovered/selected node:
+ * is it the focus, is it linked to the focus, or should it dim away?
+ */
+export const useNodeFocusState = (id: string) => {
+  // Hover-only: clicking a card to annotate should keep the rest of the canvas
+  // legible, while hovering is the exploratory "trace the path" mode.
+  const hoveredNodeId = useRespecStore((s) => s.hoveredNodeId);
+  const adjacency = useRespecStore((s) => s.adjacency);
+  return useMemo(() => {
+    if (!hoveredNodeId) return { isFocus: false, isLinked: false, isDimmed: false };
+    if (hoveredNodeId === id) return { isFocus: true, isLinked: true, isDimmed: false };
+    const isLinked = adjacency[hoveredNodeId]?.includes(id) ?? false;
+    return { isFocus: false, isLinked, isDimmed: !isLinked };
+  }, [hoveredNodeId, id, adjacency]);
+};
+
+/** The highest-priority pending insight that targets a specific node, if any. */
+export const useInsightForTarget = (targetId: string): AgentInsight | null => {
+  const insights = useRespecStore((state) => state.insights);
+  return useMemo(() => {
+    const matches = insights.filter(
+      (i) => !i.accepted && i.targetId === targetId,
+    );
+    if (matches.length === 0) return null;
+    // Prefer errors over warnings over info.
+    const rank = { error: 0, warning: 1, info: 2 } as const;
+    return [...matches].sort((a, b) => rank[a.severity] - rank[b.severity])[0];
+  }, [insights, targetId]);
+};
