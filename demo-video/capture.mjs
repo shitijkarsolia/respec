@@ -10,17 +10,18 @@ const require = createRequire('/home/user/respec/respec/node_modules/_.js');
 const { chromium } = require('playwright');
 
 const BASE = 'http://localhost:3000';
-const OUT = path.resolve('assets/raw');
+const THEME = process.env.THEME === 'light' ? 'light' : 'dark';
+const OUT = path.resolve(process.env.RAWDIR || 'assets/raw');
 fs.mkdirSync(OUT, { recursive: true });
 const SIZE = { width: 1920, height: 1080 };
 
 // NOTE: addInitScript runs before <html> exists, so all DOM work is deferred to
 // an `ensure()` that also re-runs on an interval — this keeps dark mode on (React
 // strips the class on the home route), keeps the tour-hiding CSS + cursor present.
-const initScript = () => {
+const initScript = (theme) => {
   try {
     sessionStorage.setItem('respec-demo-tour-dismissed', 'true');
-    localStorage.setItem('respec-theme', 'dark');
+    localStorage.setItem('respec-theme', theme);
   } catch (e) {}
   const CSS = `
     nextjs-portal,[data-nextjs-toolbar],#__next-build-watcher,[data-next-mark],[data-nextjs-dev-tools-button]{display:none!important}
@@ -29,10 +30,12 @@ const initScript = () => {
     #hf-cursor svg{filter:drop-shadow(0 3px 5px rgba(0,0,0,.5))}
     .hf-ripple{position:fixed;z-index:2147483646;border:2px solid rgba(16,185,129,.95);border-radius:50%;pointer-events:none;width:10px;height:10px;margin:-5px 0 0 -5px;animation:hfr .55s ease-out forwards}
     @keyframes hfr{from{transform:scale(1);opacity:.95}to{transform:scale(8);opacity:0}}`;
+  const curFill = theme === 'dark' ? '#fff' : '#111';
+  const curStroke = theme === 'dark' ? '#111' : '#fff';
   const ensure = () => {
     const de = document.documentElement;
     if (!de) return;
-    de.classList.add('dark');
+    if (theme === 'dark') de.classList.add('dark'); else de.classList.remove('dark');
     if (!document.getElementById('hf-style')) {
       const s = document.createElement('style');
       s.id = 'hf-style';
@@ -43,7 +46,7 @@ const initScript = () => {
       const cur = document.createElement('div');
       cur.id = 'hf-cursor';
       cur.innerHTML =
-        '<svg width="24" height="24" viewBox="0 0 24 24" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"><path d="M4 2l16 8-7 1.8L9.5 20z"/></svg>';
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="' + curFill + '" stroke="' + curStroke + '" stroke-width="1.4" stroke-linejoin="round"><path d="M4 2l16 8-7 1.8L9.5 20z"/></svg>';
       document.body.appendChild(cur);
     }
   };
@@ -73,9 +76,9 @@ async function scene(name, demoId, fn) {
     viewport: SIZE,
     recordVideo: { dir: OUT, size: SIZE },
     deviceScaleFactor: 1,
-    colorScheme: 'dark',
+    colorScheme: THEME,
   });
-  await ctx.addInitScript(initScript);
+  await ctx.addInitScript(initScript, THEME);
   if (demoId) await ctx.addInitScript((id) => { try { sessionStorage.setItem('respec-demo-id', id); } catch (e) {} }, demoId);
   const page = await ctx.newPage();
   page.setDefaultTimeout(9000); // fail fast so a missed selector can't hang 30s

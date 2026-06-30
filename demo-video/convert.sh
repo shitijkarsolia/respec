@@ -3,16 +3,17 @@
 # to a seekable 30fps H.264 mp4 sized for the composition. Args per clip: START DUR.
 set -e
 FF="$(node -e "console.log(require('@ffmpeg-installer/ffmpeg').path)")"
-RAW=assets/raw
-OUT=assets
+RAW="${RAWDIR:-assets/raw}"
+OUT="${OUTDIR:-assets}"
+SPEED="${SPEED:-1.0}"   # >1 plays the footage faster (shortens each clip)
 mkdir -p "$OUT"
 
-enc() { # name start dur
+enc() { # name start dur  (start/dur are INPUT-time; output dur = dur/SPEED)
   local name=$1 start=$2 dur=$3
   "$FF" -hide_banner -loglevel error -y \
     -ss "$start" -t "$dur" -i "$RAW/$name.webm" \
-    -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,fps=30,format=yuv420p" \
-    -c:v libx264 -preset medium -crf 19 -g 30 -keyint_min 15 -an -movflags +faststart \
+    -vf "setpts=PTS/${SPEED},scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,format=yuv420p" \
+    -r 30 -c:v libx264 -preset medium -crf 19 -g 30 -keyint_min 15 -an -movflags +faststart \
     "$OUT/$name.mp4"
   echo "  $name.mp4  ($("$FF" -hide_banner -loglevel error -i "$OUT/$name.mp4" -f null - 2>&1 | grep -oE 'time=[0-9:.]+' | tail -1))"
 }
