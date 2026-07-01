@@ -42,6 +42,9 @@ function EarsCardInner({ data }: NodeProps & { data: Requirement }) {
 
   return (
     <motion.div
+      role="button"
+      aria-current={isSelected ? true : undefined}
+      aria-label={`${data.id}, ${data.priority} requirement. ${data.trigger} the system shall ${data.response}.${insight ? ` Agent flag: ${insight.message}.` : ''}`}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: isDimmed ? 0.4 : 1, y: 0 }}
       transition={spring.smooth}

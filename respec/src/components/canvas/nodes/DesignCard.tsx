@@ -28,6 +28,9 @@ function DesignCardInner({ data }: NodeProps & { data: DesignElement }) {
 
   return (
     <motion.div
+      role="button"
+      aria-current={isSelected ? true : undefined}
+      aria-label={`Design element ${data.id}: ${data.title}. ${typeLabel[data.type]}.`}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: isDimmed ? 0.4 : 1, y: 0 }}
       transition={spring.smooth}

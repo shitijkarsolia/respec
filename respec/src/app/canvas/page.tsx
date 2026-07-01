@@ -6,12 +6,13 @@ import {
   Background,
   Controls,
   MiniMap,
+  useReactFlow,
   type Node,
   type Edge,
   BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useRespecStore } from '@/lib/store';
 import { computeCrossLinks } from '@/lib/cross-linker';
 import { parseSpec } from '@/lib/spec-parser';
@@ -96,6 +97,56 @@ function buildEdges(crossLinks: CrossLink[]): Edge[] {
     type: 'crosslink',
     data: { type: link.type, strength: link.strength },
   }));
+}
+
+// Renders inside <ReactFlow> so it can use useReactFlow to pan the selected node
+// into view — the toolbar advertises "Tab navigate", so selection must follow.
+function KeyboardNav({ contentNodeIds }: { contentNodeIds: string[] }) {
+  const rf = useReactFlow();
+  const selectedNodeId = useRespecStore((s) => s.selectedNodeId);
+  const setSelectedNodeId = useRespecStore((s) => s.setSelectedNodeId);
+  const reduce = useReducedMotion();
+
+  const centerOn = useCallback(
+    (id: string) => {
+      const n = rf.getNode(id);
+      if (!n) return;
+      const w = (n.measured?.width ?? n.width ?? 340) as number;
+      const h = (n.measured?.height ?? n.height ?? 120) as number;
+      const zoom = Math.max(rf.getZoom(), 0.75);
+      rf.setCenter(n.position.x + w / 2, n.position.y + h / 2, { zoom, duration: reduce ? 0 : 400 });
+    },
+    [rf, reduce],
+  );
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable) return;
+      if (e.key === 'Escape') { setSelectedNodeId(null); return; }
+      if (!contentNodeIds.length) return;
+      const cur = selectedNodeId ? contentNodeIds.indexOf(selectedNodeId) : -1;
+      let next: number | null = null;
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        next = e.shiftKey
+          ? (cur <= 0 ? contentNodeIds.length - 1 : cur - 1)
+          : (cur >= contentNodeIds.length - 1 ? 0 : cur + 1);
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        next = e.key === 'ArrowDown' ? Math.min(cur + 1, contentNodeIds.length - 1) : Math.max(cur - 1, 0);
+      }
+      if (next !== null) {
+        const id = contentNodeIds[next];
+        setSelectedNodeId(id);
+        centerOn(id);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [contentNodeIds, selectedNodeId, setSelectedNodeId, centerOn]);
+
+  return null;
 }
 
 export default function CanvasPage() {
@@ -187,10 +238,15 @@ export default function CanvasPage() {
     [insights],
   );
 
-  // Streaming animation: reveal nodes one-by-one
+  // Streaming animation: reveal nodes one-by-one (instant if reduced-motion)
+  const reduceMotion = useReducedMotion();
   useEffect(() => {
     if (allNodes.length === 0) return;
     const headerCount = Math.min(3, allNodes.length);
+    if (reduceMotion) {
+      const t = window.setTimeout(() => setVisibleCount(allNodes.length), 0);
+      return () => window.clearTimeout(t);
+    }
     let visible = headerCount;
     const startTimer = window.setTimeout(() => setVisibleCount(headerCount), 0);
     if (allNodes.length <= headerCount) {
@@ -206,7 +262,7 @@ export default function CanvasPage() {
       window.clearTimeout(startTimer);
       clearInterval(interval);
     };
-  }, [allNodes.length]);
+  }, [allNodes.length, reduceMotion]);
 
   // Only show nodes up to visibleCount
   const nodes = useMemo(
@@ -300,57 +356,11 @@ export default function CanvasPage() {
     [setSelectedNodeId],
   );
 
-  // Keyboard navigation
-  const selectedNodeId = useRespecStore((s) => s.selectedNodeId);
+  // Content node ids in tab order (headers excluded); KeyboardNav uses this.
   const contentNodeIds = useMemo(
     () => nodes.filter((n) => !n.id.startsWith('header-')).map((n) => n.id),
     [nodes],
   );
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept keyboard events when focus is inside an input, textarea, select, or contenteditable
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.tagName === 'SELECT' ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      if (e.key === 'Escape') {
-        setSelectedNodeId(null);
-        return;
-      }
-
-      if (!contentNodeIds.length) return;
-
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const currentIdx = selectedNodeId ? contentNodeIds.indexOf(selectedNodeId) : -1;
-        const next = e.shiftKey
-          ? (currentIdx <= 0 ? contentNodeIds.length - 1 : currentIdx - 1)
-          : (currentIdx >= contentNodeIds.length - 1 ? 0 : currentIdx + 1);
-        setSelectedNodeId(contentNodeIds[next]);
-        return;
-      }
-
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const currentIdx = selectedNodeId ? contentNodeIds.indexOf(selectedNodeId) : -1;
-        const next = e.key === 'ArrowDown'
-          ? Math.min(currentIdx + 1, contentNodeIds.length - 1)
-          : Math.max(currentIdx - 1, 0);
-        setSelectedNodeId(contentNodeIds[next]);
-        return;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [contentNodeIds, selectedNodeId, setSelectedNodeId]);
 
   if (!spec) {
     return (
@@ -379,6 +389,8 @@ export default function CanvasPage() {
       <div className="flex-1 flex min-h-0">
       <div
         data-tour="canvas-stage"
+        role="group"
+        aria-label="Spec graph — requirements, design, and tasks. Press Tab or the arrow keys to move between cards, Escape to deselect."
         className="flex-1 relative bg-zinc-50/60 dark:bg-zinc-950"
       >
         {/* Ambient lane wash: emerald → purple → green, left to right */}
@@ -399,9 +411,11 @@ export default function CanvasPage() {
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
         >
+          <KeyboardNav contentNodeIds={contentNodeIds} />
           <Background variant={BackgroundVariant.Dots} gap={26} size={1} color="rgba(148,163,184,0.22)" />
           <Controls />
           <MiniMap
+            ariaLabel="Spec minimap"
             nodeColor={(node) => {
               if (flaggedIds.has(node.id)) return '#f59e0b';
               if (node.type === 'ears') return '#059669';
@@ -409,8 +423,8 @@ export default function CanvasPage() {
               if (node.type === 'task') return '#22c55e';
               return '#94a3b8';
             }}
-            maskColor="rgba(0,0,0,0.08)"
-            className="!bg-white/70 dark:!bg-zinc-900/70 !backdrop-blur-md !rounded-lg !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-lg"
+            maskColor="rgba(0,0,0,0.12)"
+            className="!bg-white/80 dark:!bg-zinc-900/85 !backdrop-blur-md !rounded-lg !border !border-zinc-200/60 dark:!border-zinc-700/70 !shadow-lg"
           />
         </ReactFlow>
 

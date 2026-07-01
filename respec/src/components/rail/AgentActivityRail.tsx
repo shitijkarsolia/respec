@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { AgentBubble } from './AgentBubble';
 import { AgentLogEntry } from './AgentLogEntry';
-import { ChevronLeft, ChevronRight, Sparkles, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, X, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function AgentActivityRail() {
@@ -153,6 +153,19 @@ export function AgentActivityRail() {
               </div>
             </>
           )}
+
+          {thinking.length === 0 && completed.length > 0 && pendingInsights.length === 0 && (
+            <>
+              <Separator />
+              <div className="flex flex-col items-center gap-2 px-3 py-7 text-center">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300">
+                  <CheckCircle2 className="h-5 w-5" />
+                </span>
+                <p className="text-xs font-medium text-zinc-700 dark:text-zinc-200">No open issues</p>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">Insights cleared — the spec looks aligned.</p>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
@@ -174,7 +187,7 @@ export function AgentActivityRail() {
             >
               <button
                 onClick={() => setRailOpen(true)}
-                className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="focus-ring rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="Open agent activity rail"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -205,7 +218,7 @@ export function AgentActivityRail() {
                 </div>
                 <button
                   onClick={() => setRailOpen(false)}
-                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="focus-ring rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                   aria-label="Close agent activity rail"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -224,7 +237,7 @@ export function AgentActivityRail() {
         <button
           onClick={() => setMobileOpen(true)}
           className={cn(
-            'fixed bottom-20 right-4 z-40 flex h-11 items-center gap-1.5 rounded-full border border-zinc-200 bg-white/90 px-4 text-sm font-medium shadow-lg backdrop-blur-xl transition-opacity dark:border-zinc-700 dark:bg-zinc-900/90',
+            'focus-ring fixed bottom-20 right-4 z-40 flex h-11 items-center gap-1.5 rounded-full border border-zinc-200 bg-white/90 px-4 text-sm font-medium shadow-lg backdrop-blur-xl transition-opacity dark:border-zinc-700 dark:bg-zinc-900/90',
             selectedNodeId ? 'pointer-events-none opacity-0' : 'opacity-100',
           )}
           aria-hidden={!!selectedNodeId}
@@ -270,7 +283,7 @@ export function AgentActivityRail() {
                   </div>
                   <button
                     onClick={() => setMobileOpen(false)}
-                    className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="focus-ring rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                     aria-label="Close agent activity"
                   >
                     <X className="h-4 w-4" />

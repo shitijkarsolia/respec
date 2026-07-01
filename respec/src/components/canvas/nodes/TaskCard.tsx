@@ -31,6 +31,9 @@ function TaskCardInner({ data }: NodeProps & { data: Task }) {
 
   return (
     <motion.div
+      role="button"
+      aria-current={isSelected ? true : undefined}
+      aria-label={`Task ${data.id}: ${data.title}. Status: ${label}.${insight ? ` Agent flag: ${insight.message}.` : ''}`}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: isDimmed ? 0.4 : 1, y: 0 }}
       transition={spring.smooth}

@@ -91,7 +91,7 @@ export default function CanvasToolbar() {
         <button
           onClick={handleShare}
           disabled={!spec}
-          className="flex h-8 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-zinc-600 transition-all hover:bg-zinc-100 active:scale-[0.97] disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          className="focus-ring flex h-8 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-zinc-600 transition-all hover:bg-zinc-100 active:scale-[0.97] disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
           aria-label="Copy a shareable link to this review"
           title="Copy a shareable link to this review"
         >
@@ -100,7 +100,7 @@ export default function CanvasToolbar() {
         </button>
         <button
           onClick={toggle}
-          className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-[0.97]"
+          className="focus-ring w-8 h-8 flex items-center justify-center rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-[0.97]"
           aria-label="Toggle dark mode"
         >
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
