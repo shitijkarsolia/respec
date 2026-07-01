@@ -7,27 +7,33 @@ import { cn } from '@/lib/utils';
 
 type ToastVariant = 'success' | 'error' | 'info';
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: string;
   message: string;
   variant: ToastVariant;
+  action?: ToastAction;
 }
 
 interface ToastState {
   toasts: Toast[];
-  push: (message: string, variant?: ToastVariant) => void;
+  push: (message: string, variant?: ToastVariant, action?: ToastAction) => void;
   dismiss: (id: string) => void;
 }
 
 const useToastStore = create<ToastState>((set) => ({
   toasts: [],
-  push: (message, variant = 'info') => {
+  push: (message, variant = 'info', action) => {
     const id = crypto.randomUUID();
-    set((state) => ({ toasts: [...state.toasts, { id, message, variant }] }));
-    // Auto-dismiss after 3s
+    set((state) => ({ toasts: [...state.toasts, { id, message, variant, action }] }));
+    // Auto-dismiss after 3s (5s if there's an action to give time to click it)
     setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
-    }, 3000);
+    }, action ? 5000 : 3000);
   },
   dismiss: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 }));
@@ -35,7 +41,7 @@ const useToastStore = create<ToastState>((set) => ({
 /** Imperative helper so any module can fire a toast without hooks. */
 export const toast = {
   success: (message: string) => useToastStore.getState().push(message, 'success'),
-  error: (message: string) => useToastStore.getState().push(message, 'error'),
+  error: (message: string, action?: ToastAction) => useToastStore.getState().push(message, 'error', action),
   info: (message: string) => useToastStore.getState().push(message, 'info'),
 };
 
@@ -73,9 +79,20 @@ export function Toaster() {
               <span className="min-w-0 flex-1 text-sm text-zinc-700 dark:text-zinc-200">
                 {t.message}
               </span>
+              {t.action && (
+                <button
+                  onClick={() => {
+                    t.action?.onClick();
+                    dismiss(t.id);
+                  }}
+                  className="focus-ring shrink-0 rounded px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
+                >
+                  {t.action.label}
+                </button>
+              )}
               <button
                 onClick={() => dismiss(t.id)}
-                className="shrink-0 rounded p-0.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                className="focus-ring shrink-0 rounded p-0.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                 aria-label="Dismiss notification"
               >
                 <X className="h-3.5 w-3.5" />

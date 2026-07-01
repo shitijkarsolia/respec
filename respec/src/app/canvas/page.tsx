@@ -20,11 +20,13 @@ import { demoSpecs, getDemoSpec, DEFAULT_DEMO_ID } from '@/data/sample-specs';
 import { readShareFromHash, clearShareHash } from '@/lib/share';
 import { nodeTypes } from '@/components/canvas/nodes';
 import { edgeTypes } from '@/components/canvas/edges';
+import { toast } from '@/components/ui/toast';
 import ApprovalBar from '@/components/canvas/overlays/ApprovalBar';
 import AnnotationPopover from '@/components/canvas/overlays/AnnotationPopover';
 import GuidedDemoPanel from '@/components/canvas/overlays/GuidedDemoPanel';
 import AgentActivityRail from '@/components/rail';
 import CanvasToolbar from '@/components/canvas/CanvasToolbar';
+import EdgeLegend from '@/components/canvas/EdgeLegend';
 import type { ParsedSpec, CrossLink, AgentInsight } from '@/lib/types';
 
 const COLUMN_X = { requirements: 0, design: 500, tasks: 1000 };
@@ -285,57 +287,66 @@ export default function CanvasPage() {
     if (!spec || agentsRanRef.current) return;
     agentsRanRef.current = true;
 
-    const driftLogId = crypto.randomUUID();
-    addAgentLog({
-      id: driftLogId,
-      agentName: 'DriftDetector',
-      status: 'thinking',
-      message: 'Checking spec alignment...',
-      timestamp: Date.now(),
-    });
-
-    fetch('/api/agents/drift', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ spec }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        updateAgentLog(driftLogId, {
-          status: 'complete',
-          message: `Found ${data.insights?.length || 0} alignment issues`,
-        });
-        data.insights?.forEach((insight: AgentInsight) => addInsight(insight));
-      })
-      .catch(() => {
-        updateAgentLog(driftLogId, { status: 'error', message: 'DriftDetector failed' });
+    const runDrift = () => {
+      const driftLogId = crypto.randomUUID();
+      addAgentLog({
+        id: driftLogId,
+        agentName: 'DriftDetector',
+        status: 'thinking',
+        message: 'Checking spec alignment...',
+        timestamp: Date.now(),
       });
 
-    const gapLogId = crypto.randomUUID();
-    addAgentLog({
-      id: gapLogId,
-      agentName: 'GapFinder',
-      status: 'thinking',
-      message: 'Analyzing requirements for gaps...',
-      timestamp: Date.now(),
-    });
-
-    fetch('/api/agents/gap', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requirements: spec.requirements }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        updateAgentLog(gapLogId, {
-          status: 'complete',
-          message: `Found ${data.insights?.length || 0} suggestions`,
-        });
-        data.insights?.forEach((insight: AgentInsight) => addInsight(insight));
+      fetch('/api/agents/drift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spec }),
       })
-      .catch(() => {
-        updateAgentLog(gapLogId, { status: 'error', message: 'GapFinder failed' });
+        .then((r) => r.json())
+        .then((data) => {
+          updateAgentLog(driftLogId, {
+            status: 'complete',
+            message: `Found ${data.insights?.length || 0} alignment issues`,
+          });
+          data.insights?.forEach((insight: AgentInsight) => addInsight(insight));
+        })
+        .catch(() => {
+          updateAgentLog(driftLogId, { status: 'error', message: 'DriftDetector failed' });
+          toast.error('DriftDetector couldn’t reach the agent.', { label: 'Retry', onClick: runDrift });
+        });
+    };
+
+    const runGap = () => {
+      const gapLogId = crypto.randomUUID();
+      addAgentLog({
+        id: gapLogId,
+        agentName: 'GapFinder',
+        status: 'thinking',
+        message: 'Analyzing requirements for gaps...',
+        timestamp: Date.now(),
       });
+
+      fetch('/api/agents/gap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requirements: spec.requirements }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          updateAgentLog(gapLogId, {
+            status: 'complete',
+            message: `Found ${data.insights?.length || 0} suggestions`,
+          });
+          data.insights?.forEach((insight: AgentInsight) => addInsight(insight));
+        })
+        .catch(() => {
+          updateAgentLog(gapLogId, { status: 'error', message: 'GapFinder failed' });
+          toast.error('GapFinder couldn’t reach the agent.', { label: 'Retry', onClick: runGap });
+        });
+    };
+
+    runDrift();
+    runGap();
   }, [spec]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onNodeMouseEnter = useCallback(
@@ -413,6 +424,7 @@ export default function CanvasPage() {
         >
           <KeyboardNav contentNodeIds={contentNodeIds} />
           <Background variant={BackgroundVariant.Dots} gap={26} size={1} color="rgba(148,163,184,0.22)" />
+          <EdgeLegend />
           <Controls />
           <MiniMap
             ariaLabel="Spec minimap"
