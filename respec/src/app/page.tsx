@@ -110,9 +110,14 @@ const features = [
   { icon: CheckCircle2, accent: 'green', title: 'Annotate, compile, approve', body: 'Flag issues, compile structured feedback for Kiro, and approve — all in one loop.' },
 ];
 const featureAccent: Record<string, string> = {
-  emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  purple: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-  green: 'bg-green-500/10 text-green-600 dark:text-green-400',
+  emerald: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/20 dark:text-emerald-400',
+  purple: 'bg-purple-500/10 text-purple-600 ring-purple-500/20 dark:text-purple-400',
+  green: 'bg-green-500/10 text-green-600 ring-green-500/20 dark:text-green-400',
+};
+const featureBar: Record<string, string> = {
+  emerald: 'bg-gradient-to-r from-emerald-500 to-emerald-400',
+  purple: 'bg-gradient-to-r from-purple-500 to-purple-400',
+  green: 'bg-gradient-to-r from-green-500 to-green-400',
 };
 
 export default function HomePage() {
@@ -222,10 +227,10 @@ export default function HomePage() {
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
       {/* ---- Ambient background ---- */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute inset-x-0 top-0 h-[60vh] bg-[radial-gradient(60%_50%_at_50%_0%,rgba(16,185,129,0.12),transparent_70%)] dark:bg-[radial-gradient(60%_50%_at_50%_0%,rgba(16,185,129,0.16),transparent_70%)]" />
-        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-emerald-300/25 blur-[100px] dark:bg-emerald-600/15 animate-[float_9s_ease-in-out_infinite]" />
-        <div className="absolute top-1/4 -right-16 h-72 w-72 rounded-full bg-purple-300/20 blur-[100px] dark:bg-purple-600/15 animate-[float_11s_ease-in-out_infinite_2s]" />
-        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-sky-300/15 blur-[100px] dark:bg-sky-600/10 animate-[float_13s_ease-in-out_infinite_4s]" />
+        <div className="absolute inset-x-0 top-0 h-[65vh] bg-[radial-gradient(60%_50%_at_50%_0%,rgba(16,185,129,0.12),transparent_70%)] dark:bg-[radial-gradient(70%_55%_at_50%_0%,rgba(16,185,129,0.24),transparent_72%)]" />
+        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-emerald-300/25 blur-[100px] dark:bg-emerald-500/25 animate-[float_9s_ease-in-out_infinite]" />
+        <div className="absolute top-1/4 -right-16 h-72 w-72 rounded-full bg-purple-300/20 blur-[100px] dark:bg-purple-600/20 animate-[float_11s_ease-in-out_infinite_2s]" />
+        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-sky-300/15 blur-[100px] dark:bg-sky-600/15 animate-[float_13s_ease-in-out_infinite_4s]" />
         <div className="bg-grain absolute inset-0 opacity-[0.04] mix-blend-overlay dark:opacity-[0.06]" />
       </div>
 
@@ -240,14 +245,14 @@ export default function HomePage() {
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-zinc-200/70 hover:text-foreground dark:hover:bg-zinc-800"
+              className="focus-ring flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-zinc-200/70 hover:text-foreground dark:hover:bg-zinc-800"
               aria-label="View source on GitHub"
             >
               <GithubMark className="h-4 w-4" />
             </a>
             <button
               onClick={toggleDark}
-              className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-zinc-200/70 dark:hover:bg-zinc-800"
+              className="focus-ring flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-zinc-200/70 dark:hover:bg-zinc-800"
               aria-label="Toggle dark mode"
             >
               {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -306,10 +311,10 @@ export default function HomePage() {
               </Button>
             </div>
 
-            <div className="mt-7 flex items-center justify-center gap-6 text-sm lg:justify-start">
+            <div className="mt-8 flex items-center justify-center divide-x divide-zinc-200/80 border-t border-zinc-200/60 pt-6 text-sm dark:divide-zinc-800 dark:border-zinc-800/70 lg:justify-start">
               {[['3', 'sample specs'], ['100%', 'client-side'], ['EARS', 'aware parser']].map(([n, l]) => (
-                <div key={l} className="flex flex-col">
-                  <span className="font-semibold text-foreground">{n}</span>
+                <div key={l} className="flex flex-col px-5 first:pl-0">
+                  <span className="text-lg font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">{n}</span>
                   <span className="text-xs text-muted-foreground">{l}</span>
                 </div>
               ))}
@@ -369,7 +374,7 @@ export default function HomePage() {
                     <Button
                       onClick={handleLoadDemo}
                       size="lg"
-                      className="w-full gap-1.5 rounded-xl bg-emerald-600 text-white shadow-[0_0_20px_rgba(5,150,105,0.25)] transition-transform hover:bg-emerald-700 active:scale-[0.98]"
+                      className="w-full gap-1.5 rounded-xl bg-emerald-600 text-white transition-transform hover:bg-emerald-700 active:scale-[0.98]"
                     >
                       Launch {selectedDemo.name}
                       <ArrowRight className="h-4 w-4" />
@@ -431,7 +436,7 @@ export default function HomePage() {
         </section>
 
         {/* ---- Features ---- */}
-        <section className="mt-24 grid gap-4 sm:grid-cols-3">
+        <section className="mt-20 grid gap-5 sm:mt-24 sm:grid-cols-3">
           {features.map((f, i) => {
             const Icon = f.icon;
             return (
@@ -441,13 +446,15 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-80px' }}
                 transition={{ ...spring.smooth, delay: i * 0.08 }}
-                className="group rounded-2xl border border-zinc-200/60 bg-card/60 p-6 backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.18)] dark:border-zinc-800/60"
+                className="group relative overflow-hidden rounded-2xl border border-zinc-200/60 bg-card/60 p-6 backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.18)] dark:border-zinc-800/60"
               >
-                <span className={cn('inline-flex size-10 items-center justify-center rounded-xl', featureAccent[f.accent])}>
+                <span className={cn('absolute inset-x-0 top-0 h-[3px]', featureBar[f.accent])} />
+                <span className={cn('inline-flex size-11 items-center justify-center rounded-xl ring-1 ring-inset', featureAccent[f.accent])}>
                   <Icon className="h-5 w-5" />
                 </span>
-                <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
+                <h3 className="mt-4 text-[15px] font-semibold tracking-tight">{f.title}</h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
+                <span className="pointer-events-none absolute bottom-4 right-5 font-mono text-2xl font-bold text-zinc-200/70 dark:text-zinc-800/80">0{i + 1}</span>
               </motion.div>
             );
           })}
