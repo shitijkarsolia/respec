@@ -12,6 +12,16 @@ https://github.com/user-attachments/assets/c2bb4277-f33e-4ff4-b879-6bd2a0902e8f
 
 ▶ A ~28s walkthrough of the full review loop (landing → canvas → trace → annotate → compile → approve → handoff). The composition source lives in [`demo-video/`](demo-video).
 
+## The idea
+
+Kiro writes specs as three Markdown files: `requirements.md`, `design.md`, and `tasks.md`. That's a fine format for a machine to produce, and a rough one for a human to read through. Everything connects to everything, but a document only shows you one line at a time. A requirement points at a design decision, which points at a handful of tasks. So to check whether task T-6 actually implements requirement FR-2.1, you're scrolling between three files and holding the map in your head. Miss one link and a whole requirement ships with nothing built for it.
+
+So I built Respec. It takes those same three files and lays them out on a canvas: requirements on the left, design in the middle, tasks on the right, with lines drawn between the things that reference each other. You pick a sample spec or paste your own, the canvas builds itself, and then you review.
+
+Hover a requirement and its links light up while everything unrelated dims, so you can see exactly what implements it. Two rule-based agents, DriftDetector and GapFinder, scan the spec and flag the gaps: a task that implements nothing, a requirement nobody built. When you spot a problem you annotate it right on the card. You can comment, ask for a split, mark something for removal, or flag it for clarification. When you're done, hit Request Changes and Respec compiles your annotations into a clean feedback document you can download or paste straight back into Kiro. Or approve the spec, and it hands you an approval artifact to pass along. You can also share a review as a link that carries the whole annotated canvas, so whoever opens it sees exactly what you saw. No server on the other end, nothing to log into.
+
+And that's really the whole idea. Specs are where the cheap fixes live. Catch a missing task on the canvas and it costs you a second. Catch it after someone's built the wrong thing and it costs a sprint. Respec just makes the structure visible enough that the cheap fix is the one you reach for.
+
 ## Demo Flow
 
 The demo runs as a complete review loop:
