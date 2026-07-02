@@ -1,8 +1,8 @@
 // Captures the real Respec app as per-scene clips for the HyperFrames demo video.
-// Drives http://localhost:3000 in dark mode, suppresses the guided tour for clean
+// Drives http://localhost:3000 in light mode, suppresses the guided tour for clean
 // canvases, injects a visible cursor + click ripples, and hides the Next dev badge.
 //
-// Run: NODE_PATH=/home/user/respec/respec/node_modules node capture.mjs
+// Run: THEME=light RAWDIR=assets/raw-light node capture.mjs
 import { createRequire } from 'module';
 import fs from 'fs';
 import path from 'path';
@@ -10,8 +10,8 @@ const require = createRequire('/home/user/respec/respec/node_modules/_.js');
 const { chromium } = require('playwright');
 
 const BASE = 'http://localhost:3000';
-const THEME = process.env.THEME === 'light' ? 'light' : 'dark';
-const OUT = path.resolve(process.env.RAWDIR || 'assets/raw');
+const THEME = process.env.THEME === 'dark' ? 'dark' : 'light';
+const OUT = path.resolve(process.env.RAWDIR || 'assets/raw-light');
 fs.mkdirSync(OUT, { recursive: true });
 const SIZE = { width: 1920, height: 1080 };
 
