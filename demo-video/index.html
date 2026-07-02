@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #f6f8fb; }
+      body { font-family: "Inter", system-ui, sans-serif; }
+      .mono { font-family: "JetBrains Mono", monospace; }
+
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #f6f8fb; }
+
+      /* Full-bleed scene background (never on #root itself per determinism rules) */
+      .bg {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(60% 60% at 50% 0%, rgba(16,185,129,.12), transparent 70%),
+          radial-gradient(50% 50% at 100% 100%, rgba(168,85,247,.10), transparent 70%),
+          linear-gradient(160deg, #ffffff 0%, #eef3f9 55%, #eaf6ef 100%);
+      }
+
+      /* ---- Video clips (full-frame; GSAP owns transform for the zoom) ---- */
+      video.shot {
+        position: absolute; inset: 0;
+        width: 1920px; height: 1080px;
+        object-fit: cover; background: #f6f8fb; will-change: transform;
+      }
+
+      /* ---- Brand chrome over the footage ---- */
+      .wordmark { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+      .wordmark .accent { color: #059669; }
+
+      #brand {
+        position: absolute; left: 56px; top: 44px; font-size: 30px;
+        padding: 8px 16px; border-radius: 999px;
+        background: rgba(255,255,255,.72); border: 1px solid rgba(15,23,42,.1);
+        backdrop-filter: blur(6px); box-shadow: 0 10px 30px -12px rgba(15,23,42,.25);
+      }
+
+      /* ---- Lower-third caption (light card, dark text, strong shadow) ---- */
+      .cap {
+        position: absolute; left: 56px; bottom: 70px;
+        display: flex; align-items: center; gap: 16px;
+        padding: 18px 28px 18px 22px; border-radius: 16px;
+        background: rgba(255,255,255,.93); border: 1px solid rgba(15,23,42,.08);
+        box-shadow: 0 26px 64px -18px rgba(15,23,42,.45); backdrop-filter: blur(10px);
+        max-width: 1180px;
+      }
+      .cap .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: 0 0 14px currentColor; }
+      .cap .txt { font-size: 38px; font-weight: 600; color: #0f172a; line-height: 1.15; }
+      .cap .k { font-weight: 800; }
+      .cap-em { color: #059669; } .cap-pu { color: #9333ea; } .cap-gr { color: #16a34a; }
+
+      /* ---- Intro / Outro cards ---- */
+      .card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .card .badge {
+        display: inline-flex; align-items: center; gap: 10px; font-size: 24px; color: #475569;
+        padding: 9px 20px; border-radius: 999px; border: 1px solid rgba(15,23,42,.1);
+        background: rgba(255,255,255,.7); margin-bottom: 38px;
+      }
+      .card .badge .pulse { width: 10px; height: 10px; border-radius: 50%; background: #059669; box-shadow: 0 0 12px #059669; }
+      #intro-word { font-size: 168px; }
+      #intro-tag { font-size: 44px; color: #475569; margin-top: 26px; font-weight: 500; }
+      #intro-cols { display: flex; gap: 22px; margin-top: 60px; }
+      #intro-cols .c { width: 150px; height: 10px; border-radius: 6px; }
+
+      #outro-word { font-size: 150px; }
+      #outro-sub { font-size: 40px; color: #475569; margin-top: 22px; font-weight: 500; }
+      #outro-url { font-size: 34px; color: #059669; margin-top: 40px; letter-spacing: .01em; }
+      #outro-foot { font-size: 26px; color: #64748b; margin-top: 14px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="28.0" data-width="1920" data-height="1080" data-fps="30">
+      <!-- persistent scene background under the footage -->
+      <div id="bg" class="clip bg" data-start="0" data-duration="28.0" data-track-index="0"></div>
+
+      <!-- ============ INTRO ============ -->
+      <section id="intro" class="clip card" data-start="0" data-duration="2.0" data-track-index="6">
+        <div class="bg" style="opacity:.95"></div>
+        <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+          <span id="intro-badge" class="badge"><span class="pulse"></span> Visual spec review for Kiro</span>
+          <div id="intro-word" class="wordmark">Re<span class="accent">spec</span></div>
+          <div id="intro-tag">Review specs on a canvas, not in a doc.</div>
+          <div id="intro-cols">
+            <div class="c" style="background:#10b981"></div>
+            <div class="c" style="background:#a855f7"></div>
+            <div class="c" style="background:#22c55e"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ FOOTAGE (chained back-to-back, soft fade at each cut) ============ -->
+      <video id="v-home"   class="shot" src="assets/home.mp4"   data-start="1.85"   data-duration="2.933"  data-track-index="1" muted playsinline></video>
+      <video id="v-reveal" class="shot" src="assets/reveal.mp4" data-start="4.783"  data-duration="3.333"  data-track-index="2" muted playsinline></video>
+      <video id="v-trace"  class="shot" src="assets/trace.mp4"  data-start="8.116"  data-duration="3.333"  data-track-index="1" muted playsinline></video>
+      <video id="v-rail"   class="shot" src="assets/rail.mp4"   data-start="11.449" data-duration="2.967"  data-track-index="2" muted playsinline></video>
+      <video id="v-review" class="shot" src="assets/review.mp4" data-start="14.416" data-duration="11.567" data-track-index="1" muted playsinline></video>
+
+      <!-- brand chip over footage -->
+      <div id="brand" class="clip wordmark" data-start="1.85" data-duration="24.133" data-track-index="4">Re<span class="accent">spec</span></div>
+
+      <!-- ============ CAPTIONS ============ -->
+      <div id="cap1" class="clip cap" data-start="2.15"   data-duration="2.4" data-track-index="5"><span class="dot cap-em" style="color:#059669"></span><span class="txt">Turn Kiro specs into an <span class="k cap-em">interactive canvas</span></span></div>
+      <div id="cap2" class="clip cap" data-start="4.9"    data-duration="3.0" data-track-index="5"><span class="dot" style="color:#9333ea"></span><span class="txt"><span class="k cap-em">Requirements</span> → <span class="k cap-pu">Design</span> → <span class="k cap-gr">Tasks</span>, fully cross-referenced</span></div>
+      <div id="cap3" class="clip cap" data-start="8.2"    data-duration="3.0" data-track-index="5"><span class="dot" style="color:#059669"></span><span class="txt"><span class="k cap-em">Trace</span> any requirement to its design and tasks</span></div>
+      <div id="cap4" class="clip cap" data-start="11.55"  data-duration="2.6" data-track-index="5"><span class="dot" style="color:#d97706"></span><span class="txt">Review <span class="k" style="color:#d97706">agents</span> flag gaps and drift</span></div>
+      <div id="cap5" class="clip cap" data-start="14.6"   data-duration="3.5" data-track-index="5"><span class="dot" style="color:#059669"></span><span class="txt"><span class="k cap-em">Annotate</span> issues inline</span></div>
+      <div id="cap6" class="clip cap" data-start="18.3"   data-duration="3.5" data-track-index="5"><span class="dot" style="color:#9333ea"></span><span class="txt">Compile <span class="k cap-pu">structured feedback</span> for Kiro</span></div>
+      <div id="cap7" class="clip cap" data-start="22.0"   data-duration="3.7" data-track-index="5"><span class="dot" style="color:#16a34a"></span><span class="txt"><span class="k cap-gr">Approve</span>, then hand off to Kiro to build</span></div>
+
+      <!-- ============ OUTRO ============ -->
+      <section id="outro" class="clip card" data-start="25.783" data-duration="2.217" data-track-index="6">
+        <div class="bg"></div>
+        <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+          <div id="outro-word" class="wordmark">Re<span class="accent">spec</span></div>
+          <div id="outro-sub">Visual spec review for Kiro</div>
+          <div id="outro-url" class="mono">respec-ai.vercel.app</div>
+          <div id="outro-foot">Built for the Kiro spec format · runs in your browser</div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const ease = "power3.out";
+
+      // Intro
+      tl.from("#intro-badge", { y: 24, opacity: 0, duration: 0.4, ease }, 0.10);
+      tl.from("#intro-word", { y: 40, opacity: 0, duration: 0.45, ease }, 0.20);
+      tl.from("#intro-tag", { y: 24, opacity: 0, duration: 0.4, ease }, 0.38);
+      tl.from("#intro-cols .c", { scaleX: 0, transformOrigin: "left center", opacity: 0, duration: 0.3, stagger: 0.05, ease }, 0.50);
+      tl.to("#intro", { opacity: 0, duration: 0.35, ease: "power2.inOut" }, 1.65);
+
+      // Footage soft fade-ins (a soft cut from the previous clip / bg)
+      const fadeIn = (sel, t) => tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, t);
+      fadeIn("#v-home", 1.85); fadeIn("#v-reveal", 4.783); fadeIn("#v-trace", 8.116);
+      fadeIn("#v-rail", 11.449); fadeIn("#v-review", 14.416);
+
+      // Zoom effects — Ken Burns + punch-ins, authored on the main timeline at global time.
+      const kb = (sel, from, to, origin, start, dur) =>
+        tl.fromTo(sel, { scale: from, transformOrigin: origin },
+                       { scale: to, transformOrigin: origin, duration: dur, ease: "none" }, start);
+      kb("#v-home",   1.00, 1.06, "50% 50%", 1.85,   2.933);
+      kb("#v-reveal", 1.08, 1.00, "50% 48%", 4.783,  3.333);  // pull back as the graph builds
+      kb("#v-trace",  1.00, 1.11, "30% 64%", 8.116,  3.333);  // push toward the traced requirement
+      kb("#v-rail",   1.00, 1.10, "90% 42%", 11.449, 2.967);  // push toward the agent rail
+      kb("#v-review", 1.00, 1.08, "58% 60%", 14.416, 11.567); // slow push across the review loop
+
+      tl.from("#brand", { opacity: 0, x: -16, duration: 0.5, ease }, 2.05);
+      tl.to("#brand", { opacity: 0, duration: 0.4 }, 25.583);
+      tl.set("#brand", { opacity: 0 }, 25.783);
+
+      // Captions: slide-up in, fade out near the end of each window
+      const caps = [["#cap1",2.15,2.4],["#cap2",4.9,3.0],["#cap3",8.2,3.0],["#cap4",11.55,2.6],["#cap5",14.6,3.5],["#cap6",18.3,3.5],["#cap7",22.0,3.7]];
+      caps.forEach(([sel, start, dur]) => {
+        tl.fromTo(sel, { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease }, start);
+        tl.to(sel, { y: -10, opacity: 0, duration: 0.3, ease: "power2.in" }, start + dur - 0.34);
+      });
+
+      // Outro
+      tl.fromTo("#outro", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 25.783);
+      tl.from("#outro-word", { y: 40, opacity: 0, duration: 0.5, ease }, 25.95);
+      tl.from("#outro-sub", { y: 20, opacity: 0, duration: 0.45, ease }, 26.20);
+      tl.from("#outro-url", { y: 18, opacity: 0, duration: 0.45, ease }, 26.40);
+      tl.from("#outro-foot", { y: 14, opacity: 0, duration: 0.4, ease }, 26.55);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
