@@ -10,7 +10,7 @@ Respec turns `requirements.md`, `design.md`, and `tasks.md` into an interactive 
 
 https://github.com/user-attachments/assets/c2bb4277-f33e-4ff4-b879-6bd2a0902e8f
 
-▶ A ~28s walkthrough of the full review loop (landing → canvas → trace → annotate → compile → approve → handoff), built with [HyperFrames](https://github.com/heygen-com/hyperframes). The "video-as-code" composition source lives in [`demo-video/`](demo-video).
+▶ A ~28s walkthrough of the full review loop (landing → canvas → trace → annotate → compile → approve → handoff). The composition source lives in [`demo-video/`](demo-video).
 
 ## Demo Flow
 
@@ -54,37 +54,20 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Verify
-
-```bash
-cd respec
-npm ci
-npm run lint
-npm run build
-npm audit
-
-cd ../respec-extension
-npm ci
-cd webview && npm ci && cd ..
-npm run build
-npm audit
-cd webview && npm audit
-```
-
 ## Repo Map
 
 ```text
 respec/
 ├── respec/             # Next.js web demo
 ├── respec-extension/   # VS Code extension + webview
-├── demo-video/         # HyperFrames "video-as-code" demo (capture + composition)
+├── demo-video/         # "video-as-code" demo (capture + composition)
 ├── .kiro/              # Example Kiro specs, hooks, and steering
 └── docs/               # Architecture doc and screenshots
 ```
 
 ## Notes
 
-Built by a three-person team for the Kiro Spark Challenge at ASU. The agent layer is deterministic for demo reliability; the architecture keeps a clear path for Bedrock/Claude-powered agents later.
+Built by me for the Kiro Spark Challenge at ASU. The agent layer is deterministic for demo reliability; the architecture keeps a clear path for Bedrock/Claude-powered agents later.
 
 ## License
 
