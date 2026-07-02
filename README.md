@@ -8,9 +8,9 @@ Respec turns `requirements.md`, `design.md`, and `tasks.md` into an interactive 
 
 ## Demo
 
-[![Watch the Respec demo](docs/respec-demo-poster.png)](docs/respec-demo.mp4)
+https://github.com/user-attachments/assets/c2bb4277-f33e-4ff4-b879-6bd2a0902e8f
 
-▶ **[Watch the ~28s walkthrough](docs/respec-demo.mp4)** — a real screen-capture of the full review loop (landing → canvas → trace → annotate → compile → approve → handoff), built with [HyperFrames](https://github.com/heygen-com/hyperframes). Open the file on GitHub to play it in-browser; the "video-as-code" composition source lives in [`demo-video/`](demo-video).
+▶ A ~28s walkthrough of the full review loop (landing → canvas → trace → annotate → compile → approve → handoff), built with [HyperFrames](https://github.com/heygen-com/hyperframes). The "video-as-code" composition source lives in [`demo-video/`](demo-video).
 
 ## Demo Flow
 
@@ -79,7 +79,7 @@ respec/
 ├── respec-extension/   # VS Code extension + webview
 ├── demo-video/         # HyperFrames "video-as-code" demo (capture + composition)
 ├── .kiro/              # Example Kiro specs, hooks, and steering
-└── docs/               # Architecture doc, screenshots, and the rendered demo video
+└── docs/               # Architecture doc and screenshots
 ```
 
 ## Notes
